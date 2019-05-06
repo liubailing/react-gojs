@@ -1,0 +1,50 @@
+{
+    "name": "react-gojs",
+    "version": "0.1.0",
+    "private": true,
+    "dependencies": {
+        "react": "^16.8.3",
+        "react-dom": "^16.8.3",
+        "react-gojs": "^4.0.0",
+        "react-redux": "^6.0.1",
+        "redux": "^4.0.1",
+        "redux-logger": "^3.0.6",
+        "typescript-fsa": "^3.0.0-beta-2",
+        "typescript-fsa-reducers": "^1.2.0"
+    },
+    "homepage": "https://github.com/liubailing/react-gojs",
+    "devDependencies": {
+        "@types/jest": "^24.0.9",
+        "@types/node": "^11.9.5",
+        "@types/react": "^16.8.5",
+        "@types/react-dom": "^16.8.2",
+        "husky": "^1.3.1",
+        "prettier": "1.16.4",
+        "pretty-quick": "^1.10.0",
+        "react-scripts": "^2.1.5",
+        "tslint": "^5.13.0",
+        "tslint-config-prettier": "^1.18.0",
+        "tslint-plugin-prettier": "^2.0.1",
+        "tslint-react": "^3.6.0",
+        "typescript": "^3.3.3333"
+    },
+    "scripts": {
+        "start": "set PORT=9000 && react-scripts start",
+        "build": "react-scripts build",
+        "test": "react-scripts test",
+        "eject": "react-scripts eject",
+        "lint": "tslint -c tslint.json src/**/*.{ts,tsx} -e \"src/@types/**/*.{ts,tsx}\""
+    },
+    "husky": {
+        "hooks": {
+            "pre-commit": "pretty-quick --staged"
+        }
+    },
+    "browserslist": [
+        ">0.2%",
+        "not dead",
+        "last 2 Chrome versions",
+        "not ie <= 11",
+        "not op_mini all"
+    ]
+}

@@ -126,6 +126,7 @@ const removeLinkHandler = (state: DiagramState, payload: LinkModel): DiagramStat
 };
 
 const nodeSelectedHandler = (state: DiagramState, payload: string): DiagramState => {
+    console.log(payload);
     return {
         ...state,
         selectedNodeKeys: [...state.selectedNodeKeys, payload]

@@ -1,0 +1,8 @@
+.wfNode {
+    display: block;
+    width: 80px;
+    height: 80px;
+    border: 1px solid gray;
+    margin: 5px 0 10px 10px;
+    cursor: move;
+}

@@ -1,0 +1,24 @@
+.wfDiagram {
+    height: 500px;
+    width: 500px;
+    margin-right: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    font-size: 1rem;
+    line-height: normal;
+    float: left;
+}
+
+.wfDiagram-bg1 {
+    background-color: #222;
+}
+
+.wfDiagram-bg2 {
+    background-color: darkgreen;
+}
+
+.wfDiagram-bg3 {
+    background-color: goldenrod;
+}

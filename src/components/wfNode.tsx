@@ -4,7 +4,8 @@ import './wfNode.css';
 export enum wfNodeType {
     Start = '开始',
     Click = '点击',
-    Data = '提取数据'
+    Data = '提取数据',
+    End = '结束'
 }
 
 export interface BoxProps {
@@ -24,6 +25,9 @@ const wfNode: React.FC<BoxProps> = ({ type, isDragging, connectDragSource }) => 
 export default DragSource(
     wfNodeType.Start,
     {
+        canDrag: (props: BoxProps) => {
+            return props.type !== wfNodeType.Start;
+        },
         beginDrag: (props: BoxProps) => ({ type: props.type }),
         endDrag(props: BoxProps, monitor: DragSourceMonitor) {
             const item = monitor.getItem();

@@ -11,8 +11,9 @@ export default class wfContainer extends React.Component {
                 <WFNode type={wfNodeType.Start} />
                 <WFNode type={wfNodeType.Click} />
                 <WFNode type={wfNodeType.Data} />
+                <WFNode type={wfNodeType.End} />
             </div>
-            <div className="wfDiagram">
+            <div className="wfDiagrams">
                 <WFDiagram />
             </div>
         </div>

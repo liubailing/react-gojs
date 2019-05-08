@@ -3,6 +3,7 @@
     height: 100%;
     width: 100%;
     color: red;
+    overflow: scroll;
 }
 
 .wfDiagram-bg1 {
@@ -20,10 +21,11 @@
 .wfDiagram .wfTip {
     float: left;
     display: inline-block;
-    width: 100%;
-    background: #ddd;
+    width: 80px;
+    background: #000;
     padding: 5px 0;
     color: red;
+    z-index: 99999;
 }
 .wfDiagram .divDiagram {
     display: block;

@@ -5,4 +5,12 @@
     border: 1px solid gray;
     margin: 5px 0 10px 10px;
     cursor: move;
+    line-height: 80px;
+}
+
+.wfNodeBtn {
+    line-height: normal;
+    height: auto;
+    cursor: pointer;
+    padding: 5px 0;
 }

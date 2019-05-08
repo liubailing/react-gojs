@@ -35,19 +35,19 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
         const $ = go.GraphObject.make;
 
         const myDiagram: Diagram = $(go.Diagram, diagramId, {
+            contentAlignment: go.Spot.TopCenter,
             initialContentAlignment: go.Spot.LeftCenter,
             layout: $(go.TreeLayout, {
-                angle: 0,
+                angle: 90,
                 arrangement: go.TreeLayout.ArrangementVertical,
                 treeStyle: go.TreeLayout.StyleLayered
             }),
             isReadOnly: false,
             allowHorizontalScroll: true,
             allowVerticalScroll: true,
-            allowZoom: false,
+            allowZoom: true,
             allowSelect: true,
             autoScale: Diagram.Uniform,
-            contentAlignment: go.Spot.LeftCenter,
             TextEdited: this.onTextEdited
         });
 

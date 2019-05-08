@@ -1,6 +1,5 @@
 import React from 'react';
 import { DropTarget, ConnectDropTarget, DropTargetMonitor, DropTargetConnector } from 'react-dnd';
-import { wfNodeType } from './wfNode';
 import './wfDiagram.css';
 import { DiagramState, modelSelector, NodeModel } from '../reducers/diagramReducer';
 import { connect } from 'react-redux';
@@ -17,20 +16,17 @@ import { DiagramModel, LinkModel, ModelChangeEvent, ModelChangeEventType } from 
 import { Action } from 'typescript-fsa';
 import WFDiagram from './wfDiagram';
 
-interface DustbinProps {
-    canDrop: boolean;
-    isOver: boolean;
-    connectDropTarget: ConnectDropTarget;
-    model: DiagramModel<NodeModel, LinkModel>;
+interface WFDroperDispatchProps {
     onNodeSelection: (key: string, isSelected: boolean) => void;
     onModelChange: (event: ModelChangeEvent<NodeModel, LinkModel>) => void;
     onTextChange: (event: UpdateNodeTextEvent) => void;
 }
 
-interface MyDiagramContainerDispatchProps {
-    onNodeSelection: (key: string, isSelected: boolean) => void;
-    onModelChange: (event: ModelChangeEvent<NodeModel, LinkModel>) => void;
-    onTextChange: (event: UpdateNodeTextEvent) => void;
+interface WFDroperProps extends WFDroperDispatchProps {
+    canDrop: boolean;
+    isOver: boolean;
+    connectDropTarget: ConnectDropTarget;
+    model: DiagramModel<NodeModel, LinkModel>;
 }
 
 const mapStateToProps = (state: DiagramState) => {
@@ -41,7 +37,7 @@ const mapStateToProps = (state: DiagramState) => {
 
 const mapDispatchToProps = (
     dispatch: Dispatch<Action<string> | Action<LinkModel> | Action<UpdateNodeTextEvent>>
-): MyDiagramContainerDispatchProps => {
+): WFDroperDispatchProps => {
     return {
         onNodeSelection: (key: string, isSelected: boolean) => {
             if (isSelected) {
@@ -70,7 +66,7 @@ const mapDispatchToProps = (
     };
 };
 
-const Dustbin: React.FC<DustbinProps> = ({
+const WFDroper: React.FC<WFDroperProps> = ({
     canDrop,
     isOver,
     connectDropTarget,
@@ -80,7 +76,7 @@ const Dustbin: React.FC<DustbinProps> = ({
     onTextChange
 }) => {
     const isActive = canDrop && isOver,
-        colors = ['#fff', 'darkgreen', 'goldenrod'];
+        colors = ['#fff', '#ddd', 'goldenrod'];
     let bgColor = colors[0];
     if (isActive) {
         bgColor = colors[1];
@@ -102,9 +98,9 @@ const Dustbin: React.FC<DustbinProps> = ({
 };
 
 export default DropTarget(
-    wfNodeType.Start,
+    'WFDropTarget',
     {
-        drop: () => ({ name: 'Dustbin' })
+        drop: () => ({ name: 'Workflow_Diagram' })
     },
     (connect: DropTargetConnector, monitor: DropTargetMonitor) => ({
         connectDropTarget: connect.dropTarget(),
@@ -115,5 +111,5 @@ export default DropTarget(
     connect(
         mapStateToProps,
         mapDispatchToProps
-    )(Dustbin)
+    )(WFDroper)
 );

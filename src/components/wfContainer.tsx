@@ -1,96 +1,23 @@
 import React from 'react';
-import { DiagramState, modelSelector, NodeModel } from '../reducers/diagramReducer';
-import { connect } from 'react-redux';
-import { Dispatch } from 'redux';
-import {
-    nodeSelected,
-    nodeDeselected,
-    removeNode,
-    removeLink,
-    UpdateNodeTextEvent,
-    UpdateNodeText
-} from '../actions/diagram';
-import { DiagramModel, LinkModel, ModelChangeEvent, ModelChangeEventType } from 'react-gojs';
-import { Action } from 'typescript-fsa';
 import WFDroper from './wfDroper';
 import WFNode, { wfNodeType } from './wfNode';
-
 import './wfContainer.css';
 
-interface MyDiagramContainerStateProps {
-    model: DiagramModel<NodeModel, LinkModel>;
-}
-
-interface MyDiagramContainerDispatchProps {
-    onNodeSelection: (key: string, isSelected: boolean) => void;
-    onModelChange: (event: ModelChangeEvent<NodeModel, LinkModel>) => void;
-    onTextChange: (event: UpdateNodeTextEvent) => void;
-}
-
-const mapStateToProps = (state: DiagramState) => {
-    return {
-        model: modelSelector(state)
-    };
-};
-
-const mapDispatchToProps = (
-    dispatch: Dispatch<Action<string> | Action<LinkModel> | Action<UpdateNodeTextEvent>>
-): MyDiagramContainerDispatchProps => {
-    return {
-        onNodeSelection: (key: string, isSelected: boolean) => {
-            if (isSelected) {
-                dispatch(nodeSelected(key));
-            } else {
-                dispatch(nodeDeselected(key));
-            }
-        },
-        onModelChange: (event: ModelChangeEvent<NodeModel, LinkModel>) => {
-            switch (event.eventType) {
-                case ModelChangeEventType.Remove:
-                    if (event.nodeData) {
-                        dispatch(removeNode(event.nodeData.key));
-                    }
-                    if (event.linkData) {
-                        dispatch(removeLink(event.linkData));
-                    }
-                    break;
-                default:
-                    break;
-            }
-        },
-        onTextChange: (event: UpdateNodeTextEvent) => {
-            dispatch(UpdateNodeText(event));
-        }
-    };
-};
-
-const MyDiagramContainer = ({
-    model,
-    onNodeSelection,
-    onModelChange,
-    onTextChange
-}: MyDiagramContainerStateProps & MyDiagramContainerDispatchProps) => {
-    return (
-        <div className="wfContainer">
-            <div className="wfNodes">
-                <WFNode type={wfNodeType.Start} />
-                <WFNode type={wfNodeType.Click} />
-                <WFNode type={wfNodeType.Data} />
-                <WFNode type={wfNodeType.End} />
+export default class WFContainer extends React.PureComponent {
+    render() {
+        return (
+            <div className="wfContainer">
+                <div className="wfNodes">
+                    <WFNode type={wfNodeType.Btn_Start} />
+                    <WFNode type={wfNodeType.Btn_Reset} />
+                    <WFNode type={wfNodeType.Click} />
+                    <WFNode type={wfNodeType.Data} />
+                    <WFNode type={wfNodeType.End} />
+                </div>
+                <div className="wfDiagrams">
+                    <WFDroper />
+                </div>
             </div>
-            <div className="wfDiagrams">
-                <WFDroper
-                    model={model}
-                    onNodeSelection={onNodeSelection}
-                    onModelChange={onModelChange}
-                    onTextChange={onTextChange}
-                />
-            </div>
-        </div>
-    );
-};
-
-export default connect(
-    mapStateToProps,
-    mapDispatchToProps
-)(MyDiagramContainer);
+        );
+    }
+}

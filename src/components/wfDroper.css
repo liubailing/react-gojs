@@ -5,18 +5,6 @@
     color: red;
 }
 
-.wfDiagram-bg1 {
-    background-color: #fff;
-}
-
-.wfDiagram-bg2 {
-    background-color: darkgreen;
-}
-
-.wfDiagram-bg3 {
-    background-color: goldenrod;
-}
-
 .wfDiagram .wfTip {
     float: left;
     display: inline-block;

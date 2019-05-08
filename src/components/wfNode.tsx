@@ -1,6 +1,7 @@
 import React from 'react';
 import { DragSource, DragSourceMonitor, ConnectDragSource, DragSourceConnector } from 'react-dnd';
 import './wfNode.css';
+
 export enum wfNodeType {
     Start = '开始',
     Click = '点击',
@@ -13,6 +14,7 @@ export interface BoxProps {
     isDragging: boolean;
     connectDragSource: ConnectDragSource;
 }
+
 const wfNode: React.FC<BoxProps> = ({ type, isDragging, connectDragSource }) => {
     const opacity = isDragging ? 0.4 : 1;
     return (
@@ -28,7 +30,10 @@ export default DragSource(
         canDrag: (props: BoxProps) => {
             return props.type !== wfNodeType.Start;
         },
-        beginDrag: (props: BoxProps) => ({ type: props.type }),
+        beginDrag: (props: BoxProps) => {
+            console.log(`You beginDrag ${props.type} !`);
+            return { type: props.type };
+        },
         endDrag(props: BoxProps, monitor: DragSourceMonitor) {
             const item = monitor.getItem();
             const dropResult = monitor.getDropResult();

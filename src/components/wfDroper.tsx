@@ -1,4 +1,7 @@
 import React from 'react';
+import { DropTarget, ConnectDropTarget, DropTargetMonitor, DropTargetConnector } from 'react-dnd';
+import { wfNodeType } from './wfNode';
+import './wfDiagram.css';
 import { DiagramState, modelSelector, NodeModel } from '../reducers/diagramReducer';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
@@ -12,13 +15,16 @@ import {
 } from '../actions/diagram';
 import { DiagramModel, LinkModel, ModelChangeEvent, ModelChangeEventType } from 'react-gojs';
 import { Action } from 'typescript-fsa';
-import WFDroper from './wfDroper';
-import WFNode, { wfNodeType } from './wfNode';
+import WFDiagram from './wfDiagram';
 
-import './wfContainer.css';
-
-interface MyDiagramContainerStateProps {
+interface DustbinProps {
+    canDrop: boolean;
+    isOver: boolean;
+    connectDropTarget: ConnectDropTarget;
     model: DiagramModel<NodeModel, LinkModel>;
+    onNodeSelection: (key: string, isSelected: boolean) => void;
+    onModelChange: (event: ModelChangeEvent<NodeModel, LinkModel>) => void;
+    onTextChange: (event: UpdateNodeTextEvent) => void;
 }
 
 interface MyDiagramContainerDispatchProps {
@@ -64,33 +70,50 @@ const mapDispatchToProps = (
     };
 };
 
-const MyDiagramContainer = ({
+const Dustbin: React.FC<DustbinProps> = ({
+    canDrop,
+    isOver,
+    connectDropTarget,
     model,
     onNodeSelection,
     onModelChange,
     onTextChange
-}: MyDiagramContainerStateProps & MyDiagramContainerDispatchProps) => {
+}) => {
+    const isActive = canDrop && isOver,
+        colors = ['#fff', 'darkgreen', 'goldenrod'];
+    let bgColor = colors[0];
+    if (isActive) {
+        bgColor = colors[1];
+    } else if (canDrop) {
+        bgColor = colors[2];
+    }
+
     return (
-        <div className="wfContainer">
-            <div className="wfNodes">
-                <WFNode type={wfNodeType.Start} />
-                <WFNode type={wfNodeType.Click} />
-                <WFNode type={wfNodeType.Data} />
-                <WFNode type={wfNodeType.End} />
-            </div>
-            <div className="wfDiagrams">
-                <WFDroper
-                    model={model}
-                    onNodeSelection={onNodeSelection}
-                    onModelChange={onModelChange}
-                    onTextChange={onTextChange}
-                />
-            </div>
+        <div className="wfDiagram" ref={connectDropTarget} style={{ backgroundColor: bgColor }}>
+            <div className="wfTip">{isActive ? 'Release to drop' : 'Drag a box here'}</div>
+            <WFDiagram
+                model={model}
+                onNodeSelection={onNodeSelection}
+                onModelChange={onModelChange}
+                onTextChange={onTextChange}
+            />
         </div>
     );
 };
 
-export default connect(
-    mapStateToProps,
-    mapDispatchToProps
-)(MyDiagramContainer);
+export default DropTarget(
+    wfNodeType.Start,
+    {
+        drop: () => ({ name: 'Dustbin' })
+    },
+    (connect: DropTargetConnector, monitor: DropTargetMonitor) => ({
+        connectDropTarget: connect.dropTarget(),
+        isOver: monitor.isOver(),
+        canDrop: monitor.canDrop()
+    })
+)(
+    connect(
+        mapStateToProps,
+        mapDispatchToProps
+    )(Dustbin)
+);

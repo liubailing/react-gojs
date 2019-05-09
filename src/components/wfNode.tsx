@@ -23,7 +23,7 @@ const mapStateToProps = (state: DiagramState) => {
 };
 
 interface WFNodeDispatchProps {
-    initHandler123: (type: wfNodeType) => void;
+    initHandler: (type: wfNodeType) => void;
     updateNodeColorHandler: () => void;
     addNodeHandler: (type: wfNodeType) => void;
 }
@@ -32,7 +32,7 @@ interface WFNodeProps extends WFNodeDispatchProps {
     type: wfNodeType;
     isDragging: boolean;
     connectDragSource: ConnectDragSource;
-    initHandler123: (type: wfNodeType) => void;
+    initHandler: (type: wfNodeType) => void;
     updateNodeColorHandler: () => void;
     addNodeHandler: (type: wfNodeType) => void;
 }
@@ -44,13 +44,13 @@ const mapDispatchToProps = (
     dispatch1 = dispatch;
 
     return {
-        initHandler123: (type: wfNodeType) => {
+        initHandler: (type: wfNodeType) => {
             let initNodes = {
                 nodeDataArray: [
-                    { key: 'Begin', label: 'Begin', color: 'lightblue' },
-                    { key: 'End', label: 'End', color: 'grey' }
+                    { key: 'Begin', label: 'Begin', color: 'lightblue', group: 'Begin' },
+                    { key: 'End', label: 'End', color: 'grey', group: 'Begin' }
                 ],
-                linkDataArray: [{ from: 'Begin', to: 'End' }]
+                linkDataArray: [{ from: 'Begin', to: 'End', color: 'pink' }]
             };
 
             if (type == wfNodeType.Btn_Start) {
@@ -59,17 +59,17 @@ const mapDispatchToProps = (
 
             if (type == wfNodeType.Btn_Reset) {
                 initNodes.nodeDataArray = [
-                    { key: 'Begin', label: '测试', color: 'lightblue' },
-                    { key: 'Beta', label: 'Beta', color: 'orange' },
-                    { key: 'Gamma', label: 'Gamma', color: 'lightgreen' },
-                    { key: 'Delta', label: 'Delta', color: 'pink' },
-                    { key: 'End', label: 'End', color: 'grey' }
+                    { key: 'Begin', label: '测试', color: 'lightblue', group: 'Begin' },
+                    { key: 'Beta', label: 'Beta', color: 'orange', group: 'Begin' },
+                    { key: 'Gamma', label: 'Gamma', color: 'lightgreen', group: 'Begin' },
+                    { key: 'Delta', label: 'Delta', color: 'pink', group: 'Begin' },
+                    { key: 'End', label: 'End', color: 'grey', group: 'Begin' }
                 ];
                 initNodes.linkDataArray = [
-                    { from: 'Begin', to: 'Beta' },
-                    { from: 'Begin', to: 'Gamma' },
-                    { from: 'Beta', to: 'Delta' },
-                    { from: 'Begin', to: 'End' }
+                    { from: 'Begin', to: 'Beta', color: 'pink' },
+                    { from: 'Beta', to: 'Gamma', color: 'pink' },
+                    { from: 'Beta', to: 'Delta', color: 'pink' },
+                    { from: 'Begin', to: 'End', color: 'pink' }
                 ];
                 dispatch(init(initNodes));
             }
@@ -85,7 +85,7 @@ const WFNode: React.FC<WFNodeProps> = ({
     type,
     isDragging,
     connectDragSource,
-    initHandler123,
+    initHandler,
     updateNodeColorHandler,
     addNodeHandler
 }) => {
@@ -96,7 +96,7 @@ const WFNode: React.FC<WFNodeProps> = ({
             className={`wfNode ${isBtn ? 'wfNodeBtn' : ''}`}
             ref={connectDragSource}
             style={{ opacity: opacity }}
-            onClick={() => initHandler123(type)}
+            onClick={() => initHandler(type)}
             title={`可${isBtn ? '点击' : '拖拽'} \n\r ${type}`}
         >
             {type}

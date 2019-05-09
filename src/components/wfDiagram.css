@@ -3,19 +3,6 @@
     height: 100%;
     width: 100%;
     color: red;
-    overflow: scroll;
-}
-
-.wfDiagram-bg1 {
-    background-color: #fff;
-}
-
-.wfDiagram-bg2 {
-    background-color: darkgreen;
-}
-
-.wfDiagram-bg3 {
-    background-color: goldenrod;
 }
 
 .wfDiagram .wfTip {

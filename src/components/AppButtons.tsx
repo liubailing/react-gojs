@@ -34,10 +34,10 @@ const mapDispatchToProps = (
                         { key: 'Omega', label: 'Omega', color: 'grey' }
                     ],
                     linkDataArray: [
-                        { from: 'Alpha', to: 'Beta' },
-                        { from: 'Alpha', to: 'Gamma' },
-                        { from: 'Beta', to: 'Delta' },
-                        { from: 'Gamma', to: 'Omega' }
+                        { from: 'Alpha', to: 'Beta', color: 'pink' },
+                        { from: 'Alpha', to: 'Gamma', color: 'pink' },
+                        { from: 'Beta', to: 'Delta', color: 'pink' },
+                        { from: 'Gamma', to: 'Omega', color: 'pink' }
                     ]
                 })
             ),

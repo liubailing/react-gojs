@@ -10,6 +10,7 @@ export interface UpdateNodeTextEvent {
 }
 
 export const init = actionCreator<DiagramModel<NodeModel, LinkModel>>('INIT');
+export const getModel = actionCreator<number>('Get_Model');
 export const updateNodeColor = actionCreator('UPDATE_NODE_COLOR');
 export const UpdateNodeText = actionCreator<UpdateNodeTextEvent>('UPDATE_NODE_TEXT');
 export const addNode = actionCreator<string>('ADD_NODE');

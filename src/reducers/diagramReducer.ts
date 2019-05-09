@@ -9,7 +9,8 @@ import {
     removeNode,
     removeLink,
     UpdateNodeText,
-    UpdateNodeTextEvent
+    UpdateNodeTextEvent,
+    getModel
 } from '../actions/diagram';
 import { BaseNodeModel, DiagramModel, LinkModel } from 'react-gojs';
 
@@ -21,6 +22,8 @@ export interface DiagramState {
 export interface NodeModel extends BaseNodeModel {
     label: string;
     color: string;
+    group?: string;
+    isGroup?: boolean;
 }
 
 const initHandler = (state: DiagramState, payload: DiagramModel<NodeModel, LinkModel>): DiagramState => {
@@ -34,6 +37,64 @@ const colors = ['lightblue', 'orange', 'lightgreen', 'pink', 'yellow', 'red', 'g
 
 const getRandomColor = () => {
     return colors[Math.floor(Math.random() * colors.length)];
+};
+
+//得到一个随机 diagran 数组
+const getModelHandler = (state: DiagramState, nodeCount: number): DiagramState => {
+    let param = {
+        groupCount: 2,
+        nodeCount: 10
+    };
+
+    let addedKeys: Array<string> = []; // this will contain the keys of all nodes created
+    let groups: Array<NodeModel> = [];
+    let nodes: Array<NodeModel> = [];
+
+    // create a random number of groups
+    // ensure there are at least 10 groups in the diagram
+
+    for (let i = 0; i < param.groupCount; i++) {
+        let name = 'group' + i;
+        groups.push({
+            key: name,
+            label: name,
+            isGroup: true,
+            group: name,
+            color: getRandomColor()
+        });
+        addedKeys.push(name);
+    }
+    let nodeIds = Math.floor(Math.random() * param.nodeCount) + param.groupCount;
+    // create a random number of non-group nodes
+    for (let i = 0; i < nodeIds; i++) {
+        let groupid = '';
+        if (i / 3 > 0) {
+            groupid = groups[Math.random() * param.groupCount]!.group!;
+        }
+        let color = getRandomColor();
+        let name = color + i;
+        nodes.push({
+            key: name,
+            label: name,
+            isGroup: false,
+            group: groupid,
+            color: getRandomColor()
+        });
+        addedKeys.push(name);
+    }
+    // add at least one link from each node to another
+    // this could result in clusters of nodes unreachable from each other, but no lone nodes
+    //var arr = [];
+    // for (var x in addedKeys) arr.push(addedKeys[x]);
+    // arr.sort(function (x, y) { return Math.random() - 1; });
+    // for (var i = 0; i < arr.length; i++) {
+    //     var from = Math.floor(Math.random() * (arr.length - i)) + i;
+    //     if (from !== i) {
+    //         model.linkDataArray.push({ from: arr[from], to: arr[i]});
+    //     }
+    // }
+    state.model.nodeDataArray = [...groups, ...nodes];
+    return state;
 };
 
 const updateNodeColorHandler = (state: DiagramState): DiagramState => {
@@ -73,8 +134,9 @@ const updateNodeTextHandler = (state: DiagramState, payload: UpdateNodeTextEvent
 };
 
 const addNodeHandler = (state: DiagramState, payload: string): DiagramState => {
+    console.log('-------------------------');
     const linksToAdd: LinkModel[] = state.selectedNodeKeys.map(parent => {
-        return { from: parent, to: payload };
+        return { from: parent, to: payload, color: 'pink' };
     });
     return {
         ...state,
@@ -155,6 +217,7 @@ export const diagramReducer: Reducer<DiagramState> = reducerWithInitialState<Dia
     selectedNodeKeys: []
 })
     .case(init, initHandler)
+    .case(getModel, getModelHandler)
     .case(updateNodeColor, updateNodeColorHandler)
     .case(UpdateNodeText, updateNodeTextHandler)
     .case(addNode, addNodeHandler)

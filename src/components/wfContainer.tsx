@@ -2,12 +2,35 @@ import React from 'react';
 import WFDroper from './wfDroper';
 import WFNode, { wfNodeType } from './wfNode';
 import './wfContainer.css';
+import { DiagramState } from '../reducers/diagramReducer';
+import { connect } from 'react-redux';
 
-export default class WFContainer extends React.PureComponent {
+interface MyDiagramProps extends WFDroperDispatchProps {}
+
+interface WFDroperDispatchProps {}
+
+const mapStateToProps = (state: DiagramState) => {
+    return {
+        model: state
+    };
+};
+
+const mapDispatchToProps = (): WFDroperDispatchProps => {
+    return {};
+};
+
+class WFContainer extends React.PureComponent<MyDiagramProps> {
+    constructor(props: MyDiagramProps) {
+        super(props);
+    }
+
     render() {
         return (
             <div className="wfContainer">
                 <div className="wfNodes">
+                    <span className="wfNode" draggable={true}>
+                        测试
+                    </span>
                     <WFNode type={wfNodeType.Btn_Start} />
                     <WFNode type={wfNodeType.Btn_Reset} />
                     <WFNode type={wfNodeType.Click} />
@@ -20,4 +43,20 @@ export default class WFContainer extends React.PureComponent {
             </div>
         );
     }
+
+    componentDidMount() {
+        this.intAct();
+    }
+
+    intAct() {
+        let div: HTMLElement | null = document.getElementById('divDiagram');
+        if (div) {
+            console.log(div.clientHeight);
+        }
+    }
 }
+
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(WFContainer);

@@ -10,11 +10,15 @@ import {
     removeLink,
     UpdateNodeText,
     UpdateNodeTextEvent,
-    getModel
+    getModel,
+    getDiagram,
+    setDiagram
 } from '../actions/diagram';
+import go, { Diagram } from 'gojs';
 import { BaseNodeModel, DiagramModel, LinkModel } from 'react-gojs';
 
 export interface DiagramState {
+    diagram: Diagram;
     model: DiagramModel<NodeModel, LinkModel>;
     selectedNodeKeys: string[];
 }
@@ -188,10 +192,10 @@ const removeLinkHandler = (state: DiagramState, payload: LinkModel): DiagramStat
 };
 
 const nodeSelectedHandler = (state: DiagramState, payload: string): DiagramState => {
-    console.log(payload);
     return {
         ...state,
-        selectedNodeKeys: [...state.selectedNodeKeys, payload]
+        selectedNodeKeys: [payload]
+        //selectedNodeKeys: [...state.selectedNodeKeys, payload]
     };
 };
 
@@ -209,7 +213,17 @@ const nodeDeselectedHandler = (state: DiagramState, payload: string): DiagramSta
     };
 };
 
+const setDiagramHandler = (state: DiagramState, payload: Diagram): DiagramState => {
+    state.diagram = payload;
+    return state;
+};
+
+const getDiagramHandler = (state: DiagramState): DiagramState => {
+    return state;
+};
+
 export const diagramReducer: Reducer<DiagramState> = reducerWithInitialState<DiagramState>({
+    diagram: new go.Diagram(),
     model: {
         nodeDataArray: [{ key: 'Root', color: 'lightblue', label: 'Root' }],
         linkDataArray: []
@@ -225,6 +239,8 @@ export const diagramReducer: Reducer<DiagramState> = reducerWithInitialState<Dia
     .case(removeLink, removeLinkHandler)
     .case(nodeSelected, nodeSelectedHandler)
     .case(nodeDeselected, nodeDeselectedHandler)
+    .case(setDiagram, setDiagramHandler)
+    .case(getDiagram, getDiagramHandler)
     .build();
 
 export const modelSelector = (state: DiagramState) => state.model;

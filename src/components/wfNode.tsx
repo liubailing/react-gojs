@@ -1,5 +1,4 @@
 import React from 'react';
-import { DragSource, DragSourceMonitor, ConnectDragSource, DragSourceConnector } from 'react-dnd';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { Action } from 'typescript-fsa';
@@ -30,19 +29,12 @@ interface WFNodeDispatchProps {
 
 interface WFNodeProps extends WFNodeDispatchProps {
     type: wfNodeType;
-    isDragging: boolean;
-    connectDragSource: ConnectDragSource;
-    initHandler: (type: wfNodeType) => void;
-    updateNodeColorHandler: () => void;
-    addNodeHandler: (type: wfNodeType) => void;
 }
-let dispatch1;
+
 let count = 0;
 const mapDispatchToProps = (
-    dispatch: Dispatch<Action<DiagramModel<NodeModel, LinkModel>> | Action<void> | Action<string>>
+    dispatch: Dispatch<Action<DiagramModel<NodeModel, LinkModel>> | Action<string> | Action<void> | Action<number>>
 ): WFNodeDispatchProps => {
-    dispatch1 = dispatch;
-
     return {
         initHandler: (type: wfNodeType) => {
             let initNodes = {
@@ -81,57 +73,34 @@ const mapDispatchToProps = (
     };
 };
 
-const WFNode: React.FC<WFNodeProps> = ({
-    type,
-    isDragging,
-    connectDragSource,
-    initHandler,
-    updateNodeColorHandler,
-    addNodeHandler
-}) => {
-    const opacity = isDragging ? 0.4 : 1;
+const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, updateNodeColorHandler, addNodeHandler }) => {
     let isBtn = [wfNodeType.Btn_Start, wfNodeType.Btn_Reset].includes(type);
     return (
-        <div
-            className={`wfNode ${isBtn ? 'wfNodeBtn' : ''}`}
-            ref={connectDragSource}
-            style={{ opacity: opacity }}
-            onClick={() => initHandler(type)}
-            title={`可${isBtn ? '点击' : '拖拽'} \n\r ${type}`}
-        >
-            {type}
+        <div>
+            {isBtn && (
+                <div
+                    className="wfNode wfNodeBtn"
+                    onClick={() => initHandler(type)}
+                    title={`可${isBtn ? '点击' : '拖拽'} \n\r ${type}`}
+                >
+                    {type}
+                </div>
+            )}
+            {!isBtn && (
+                <div
+                    className="wfNode"
+                    draggable={true}
+                    onClick={() => initHandler(type)}
+                    title={`可${isBtn ? '点击' : '拖拽'} \n\r ${type}`}
+                >
+                    {type}
+                </div>
+            )}
         </div>
     );
 };
 
-export default DragSource(
-    'WFDropTarget',
-    {
-        canDrag: (props: WFNodeProps) => {
-            return ![wfNodeType.Btn_Start, wfNodeType.Btn_Reset].includes(props.type);
-        },
-        beginDrag: (props: WFNodeProps) => {
-            console.log(`You beginDrag ${props.type} !`);
-            return props;
-        },
-        endDrag(props: WFNodeProps, monitor: DragSourceMonitor, component: WFNodeProps) {
-            const item = monitor.getItem();
-            const dropResult = monitor.getDropResult();
-
-            if (dropResult) {
-                // TODO 调起增加节点的事件
-                mapDispatchToProps(dispatch1).addNodeHandler(props.type);
-                console.log(`You dropped ${item.type} into ${dropResult.name}!`);
-            }
-        }
-    },
-    (connect: DragSourceConnector, monitor: DragSourceMonitor) => ({
-        connectDragSource: connect.dragSource(),
-        isDragging: monitor.isDragging()
-    })
-)(
-    connect(
-        mapStateToProps,
-        mapDispatchToProps
-    )(WFNode)
-);
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(WFNode);

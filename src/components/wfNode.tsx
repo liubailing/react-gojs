@@ -2,8 +2,8 @@ import React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { Action } from 'typescript-fsa';
-import { DiagramState, NodeModel } from '../reducers/diagramReducer';
-import { DiagramModel, LinkModel } from 'react-gojs';
+import { DiagramState, WFNodeModel, WFLinkModel } from '../reducers/diagramReducer';
+import { DiagramModel } from 'react-gojs';
 import { init, updateNodeColor, addNode } from '../actions/diagram';
 import './wfNode.css';
 
@@ -33,14 +33,14 @@ interface WFNodeProps extends WFNodeDispatchProps {
 
 let count = 0;
 const mapDispatchToProps = (
-    dispatch: Dispatch<Action<DiagramModel<NodeModel, LinkModel>> | Action<string> | Action<void> | Action<number>>
+    dispatch: Dispatch<Action<DiagramModel<WFNodeModel, WFLinkModel>> | Action<string> | Action<void> | Action<number>>
 ): WFNodeDispatchProps => {
     return {
         initHandler: (type: wfNodeType) => {
             let initNodes = {
                 nodeDataArray: [
-                    { key: 'Begin', label: 'Begin', color: 'lightblue', group: 'Begin' },
-                    { key: 'End', label: 'End', color: 'grey', group: 'Begin' }
+                    { key: 'Begin', label: 'Begin', color: 'lightblue', group: '', isGroup: false },
+                    { key: 'End', label: 'End', color: 'grey', group: '', isGroup: false }
                 ],
                 linkDataArray: [{ from: 'Begin', to: 'End', color: 'pink' }]
             };
@@ -51,11 +51,12 @@ const mapDispatchToProps = (
 
             if (type == wfNodeType.Btn_Reset) {
                 initNodes.nodeDataArray = [
-                    { key: 'Begin', label: '测试', color: 'lightblue', group: 'Begin' },
-                    { key: 'Beta', label: 'Beta', color: 'orange', group: 'Begin' },
-                    { key: 'Gamma', label: 'Gamma', color: 'lightgreen', group: 'Begin' },
-                    { key: 'Delta', label: 'Delta', color: 'pink', group: 'Begin' },
-                    { key: 'End', label: 'End', color: 'grey', group: 'Begin' }
+                    { key: 'Begin', label: '测试', color: 'lightblue', group: 'Begin', isGroup: false },
+                    { key: 'Beta', label: 'Beta', color: 'orange', group: 'Begin', isGroup: false },
+                    { key: 'Gamma', label: 'Gamma', color: 'lightgreen', group: 'Begin', isGroup: false },
+                    { key: '孤独', label: '孤独', color: 'lightgreen', group: 'Begin', isGroup: false },
+                    { key: 'Delta', label: 'Delta', color: 'pink', group: 'Begin', isGroup: false },
+                    { key: 'End', label: 'End', color: 'grey', group: 'Begin', isGroup: false }
                 ];
                 initNodes.linkDataArray = [
                     { from: 'Begin', to: 'Beta', color: 'pink' },

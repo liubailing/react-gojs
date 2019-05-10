@@ -2,8 +2,8 @@ import React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { Action } from 'typescript-fsa';
-import { DiagramState, NodeModel } from '../reducers/diagramReducer';
-import { DiagramModel, LinkModel } from 'react-gojs';
+import { DiagramState, WFNodeModel, WFLinkModel } from '../reducers/diagramReducer';
+import { DiagramModel } from 'react-gojs';
 import { init, updateNodeColor, addNode } from '../actions/diagram';
 
 export interface AppButtonsDispatchProps {
@@ -19,7 +19,7 @@ const mapStateToProps = (state: DiagramState) => {
 };
 
 const mapDispatchToProps = (
-    dispatch: Dispatch<Action<DiagramModel<NodeModel, LinkModel>> | Action<void> | Action<string>>
+    dispatch: Dispatch<Action<DiagramModel<WFNodeModel, WFLinkModel>> | Action<void> | Action<string>>
 ): AppButtonsDispatchProps => {
     let nodeId = 0;
     return {
@@ -27,11 +27,11 @@ const mapDispatchToProps = (
             dispatch(
                 init({
                     nodeDataArray: [
-                        { key: 'Alpha', label: 'Alpha', color: 'lightblue' },
-                        { key: 'Beta', label: 'Beta', color: 'orange' },
-                        { key: 'Gamma', label: 'Gamma', color: 'lightgreen' },
-                        { key: 'Delta', label: 'Delta', color: 'pink' },
-                        { key: 'Omega', label: 'Omega', color: 'grey' }
+                        { key: 'Alpha', label: 'Alpha', color: 'lightblue', group: '', isGroup: false },
+                        { key: 'Beta', label: 'Beta', color: 'orange', group: '', isGroup: false },
+                        { key: 'Gamma', label: 'Gamma', color: 'lightgreen', group: '', isGroup: false },
+                        { key: 'Delta', label: 'Delta', color: 'pink', group: '', isGroup: false },
+                        { key: 'Omega', label: 'Omega', color: 'grey', group: '', isGroup: false }
                     ],
                     linkDataArray: [
                         { from: 'Alpha', to: 'Beta', color: 'pink' },

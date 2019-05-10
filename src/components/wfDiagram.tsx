@@ -1,6 +1,6 @@
 import React from 'react';
 import go, { Diagram, ToolManager, GraphObject } from 'gojs';
-import { DiagramState, NodeModel } from '../reducers/diagramReducer';
+import { DiagramState, WFNodeModel, WFLinkModel } from '../reducers/diagramReducer';
 import './wfDiagram.css';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
@@ -12,13 +12,18 @@ import {
     UpdateNodeTextEvent,
     UpdateNodeText,
     addNode,
-    setDiagram
+    setDiagram,
+    newNode,
+    linkDropedTo,
+    nodeDropedTo,
+    addNodeByDropLink,
+    addNodeByDropNode
 } from '../actions/diagram';
-import { DiagramModel, LinkModel, ModelChangeEvent, GojsDiagram, ModelChangeEventType } from 'react-gojs';
+import { DiagramModel, ModelChangeEvent, GojsDiagram, ModelChangeEventType } from 'react-gojs';
 import { Action } from 'typescript-fsa';
 
 interface MyDiagramProps extends WFDroperDispatchProps {
-    model: DiagramModel<NodeModel, LinkModel>;
+    model: DiagramModel<WFNodeModel, WFLinkModel>;
 }
 
 const mapStateToProps = (state: DiagramState) => {
@@ -28,25 +33,30 @@ const mapStateToProps = (state: DiagramState) => {
 };
 
 interface WFDroperDispatchProps {
-    onNodeSelection: (key: string, isSelected: boolean) => void;
-    onModelChange: (event: ModelChangeEvent<NodeModel, LinkModel>) => void;
-    onTextChange: (event: UpdateNodeTextEvent) => void;
-    setDiagram: (diagram: Diagram) => void;
-    addNodeHandler: (string) => void;
+    onNodeSelectionHandler: (key: string, isSelected: boolean) => void;
+    onModelChangeHandler: (event: ModelChangeEvent<WFNodeModel, WFLinkModel>) => void;
+    onTextChangeHandler: (event: UpdateNodeTextEvent) => void;
+    setDiagramHandler: (diagram: Diagram) => void;
+    addNodeHandler: (name: string) => void;
+    newNodeHandler: (name: string) => void;
+    linkDropedToHandler: (from: any, to: any) => void;
+    nodeDropedToHandler: (key: any) => void;
+    addNodeByDropLinkHandler: (name: any) => void;
+    addNodeByDropNodeHandler: (name: string) => void;
 }
 
 const mapDispatchToProps = (
-    dispatch: Dispatch<Action<string> | Action<Diagram> | Action<LinkModel> | Action<UpdateNodeTextEvent>>
+    dispatch: Dispatch<Action<string> | Action<Diagram> | Action<WFLinkModel> | Action<UpdateNodeTextEvent>>
 ): WFDroperDispatchProps => {
     return {
-        onNodeSelection: (key: string, isSelected: boolean) => {
+        onNodeSelectionHandler: (key: string, isSelected: boolean) => {
             if (isSelected) {
                 dispatch(nodeSelected(key));
             } else {
                 dispatch(nodeDeselected(key));
             }
         },
-        onModelChange: (event: ModelChangeEvent<NodeModel, LinkModel>) => {
+        onModelChangeHandler: (event: ModelChangeEvent<WFNodeModel, WFLinkModel>) => {
             switch (event.eventType) {
                 case ModelChangeEventType.Remove:
                     if (event.nodeData) {
@@ -60,18 +70,34 @@ const mapDispatchToProps = (
                     break;
             }
         },
-        onTextChange: (event: UpdateNodeTextEvent) => {
+        onTextChangeHandler: (event: UpdateNodeTextEvent) => {
             dispatch(UpdateNodeText(event));
         },
-        setDiagram: (diagram: Diagram) => {
+        setDiagramHandler: (diagram: Diagram) => {
             dispatch(setDiagram(diagram));
         },
         addNodeHandler: type => {
             dispatch(addNode(`${type}-${++count}`));
+        },
+        newNodeHandler: (name: string) => {
+            dispatch(newNode(`${name}-${++count}`));
+        },
+        linkDropedToHandler: (from: string, to: string) => {
+            dispatch(linkDropedTo({ from: from, to: to, color: '' }));
+        },
+        nodeDropedToHandler: (key: string) => {
+            dispatch(nodeDropedTo(key));
+        },
+        addNodeByDropLinkHandler: (name: string) => {
+            dispatch(addNodeByDropLink(`${name}-${++count}`));
+        },
+        addNodeByDropNodeHandler: (name: string) => {
+            dispatch(addNodeByDropNode(`${name}-${++count}`));
         }
     };
 };
 
+let mouseType = '';
 let count = 0;
 let toKey = '';
 let pixelratio = 0;
@@ -87,24 +113,27 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
         this.nodeMouseDropHandler = this.nodeMouseDropHandler.bind(this);
         this.nodeMouseDragEnterHandler = this.nodeMouseDragEnterHandler.bind(this);
         this.nodeMouseDragLeaveHandler = this.nodeMouseDragLeaveHandler.bind(this);
+
+        this.linkMouseEnterHandler = this.linkMouseEnterHandler.bind(this);
+        this.linkMouseLeaveHandler = this.linkMouseLeaveHandler.bind(this);
+        this.linkMouseDropHandler = this.linkMouseDropHandler.bind(this);
+        this.linkMouseDragEnterHandler = this.linkMouseDragEnterHandler.bind(this);
+        this.linkMouseDragLeaveHandler = this.linkMouseDragLeaveHandler.bind(this);
     }
 
     render() {
         return (
             <GojsDiagram
                 diagramId="divDiagram"
+                className="divDiagram"
                 model={this.getMode()}
                 createDiagram={this.createDiagram}
-                className="divDiagram"
-                onModelChange={() => {
-                    console.log('onModelChange');
-                    this.props.onModelChange;
-                }}
+                onModelChange={this.props.onModelChangeHandler}
             />
         );
     }
 
-    private getMode(): DiagramModel<NodeModel, LinkModel> {
+    private getMode(): DiagramModel<WFNodeModel, WFLinkModel> {
         const a = go.GraphObject.length;
         console.log(a);
         return this.props.model;
@@ -142,7 +171,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                 resizeObjectName: 'SHAPE', // user can resize the Shape
                 selectionChanged: node => {
                     console.log('selectionChanged');
-                    this.props.onNodeSelection(node.key as string, node.isSelected);
+                    this.props.onNodeSelectionHandler(node.key as string, node.isSelected);
                 }
             },
             new go.Binding('location'),
@@ -154,7 +183,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                 },
                 new go.Binding('fill', 'color'),
                 new go.Binding('fill', 'isHighlighted', function(h, shape) {
-                    if (h) return 'red';
+                    if (h) return mouseType == 'DRAG' ? 'red' : 'green';
                     var c = shape.part.data.color;
                     return c ? c : 'white';
                 }).ofObject() // binding source is Node.isHighlighted
@@ -165,9 +194,15 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
         myDiagram.linkTemplate = $(
             go.Link,
             {
+                mouseEnter: this.linkMouseEnterHandler,
+                mouseLeave: this.linkMouseLeaveHandler,
+                mouseDragEnter: this.linkMouseDragEnterHandler,
+                mouseDragLeave: this.linkMouseDragLeaveHandler,
+                mouseDrop: this.linkMouseDropHandler,
                 routing: go.Link.Orthogonal,
                 corner: 10
             },
+            new go.Binding('location'),
             $(
                 go.Shape,
                 {
@@ -175,7 +210,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                 },
                 new go.Binding('stroke', 'color'),
                 new go.Binding('stroke', 'isHighlighted', function(h, shape) {
-                    if (h) return 'red';
+                    if (h) return mouseType == 'DRAG' ? 'red' : 'green';
                     var c = shape.part.data.color;
                     return c ? c : 'white';
                 }).ofObject() // binding source is Node.isHighlighted
@@ -229,7 +264,6 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
         ); // end Group
 
         this.initDrag();
-        this.props.setDiagram(myDiagram);
         return myDiagram;
     }
 
@@ -353,14 +387,28 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                         // var pixelratio = window.devicePixelRatio;
                         // if the target is not the canvas, we may have trouble, so just quit:
                         if (!(can instanceof HTMLCanvasElement)) return;
-                        // var bbox = can.getBoundingClientRect();
-                        // var bbw = bbox.width;
-                        // if (bbw === 0) bbw = 0.001;
-                        // var bbh = bbox.height;
-                        // if (bbh === 0) bbh = 0.001;
-                        // var mx = event.clientX - bbox.left * ((can.width / pixelratio) / bbw) - dragged.offsetX;
-                        // var my = event.clientY - bbox.top * ((can.height / pixelratio) / bbh) - dragged.offsetY;
-                        //var point = myDiagram.transformViewToDoc(new go.Point(mx, my));
+                        var bbox = can.getBoundingClientRect();
+                        var bbw = bbox.width;
+                        if (bbw === 0) bbw = 0.001;
+                        var bbh = bbox.height;
+                        if (bbh === 0) bbh = 0.001;
+                        var mx = event.clientX - bbox.left * (can.width / pixelratio / bbw);
+                        var my = event.clientY - bbox.top * (can.height / pixelratio / bbh);
+                        var point = myDiagram.transformViewToDoc(new go.Point(mx, my));
+                        var curnode: any = myDiagram.findPartAt(point, true);
+
+                        if (curnode instanceof go.Link) {
+                            console.log('----------3333333333333333333-----------');
+                            //_this.props.nodeDropedToHandler(curnode.jb.from,curnode.to);
+                            _this.props.addNodeByDropLinkHandler('new');
+                        } else if (curnode instanceof go.Node) {
+                            _this.props.nodeDropedToHandler(curnode.key);
+                            _this.props.addNodeByDropNodeHandler('new');
+                        } else if (curnode instanceof go.Diagram) {
+                        } else if (curnode instanceof go.Group) {
+                        } else {
+                            //highlight(null);
+                        }
 
                         //myDiagram.startTransaction('new node');
                         // myDiagram.model.addNodeData({
@@ -369,9 +417,9 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                         //     color: "lightyellow"
                         // });
                         //
-                        if (toKey) _this.props.onNodeSelection(toKey, true);
-                        console.log(toKey);
-                        _this.props.addNodeHandler('new');
+                        // if (toKey) _this.props.onNodeSelectionHandler(toKey, true);
+                        // console.log(toKey);
+                        // _this.props.addNodeHandler('new');
                         //myDiagram.commitTransaction('new node');
                         // remove dragged element from its old location
                         //if (remove && remove.c) dragged.parentNode.removeChild(dragged);
@@ -403,37 +451,98 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
     }
 
     private nodeMouseEnterHandler(e, obj: GraphObject): void {
+        this.setNodeHighlight(obj);
         console.log('node-MouseEnter');
     }
 
     private nodeMouseLeaveHandler(e, obj: GraphObject): void {
+        this.setNodeHighlight(null);
         console.log('node-MouseLeave');
     }
 
     private nodeMouseDragEnterHandler(e, obj: GraphObject): void {
-        this.setNodeHighlight(obj);
         console.log('node-DragEnter');
     }
 
     private nodeMouseDropHandler(e, obj: GraphObject): void {
         if (obj instanceof go.Node) {
-            this.setNodeHighlight(obj);
         }
         console.log('node-MouseDrop------------' + this);
     }
     private nodeMouseDragLeaveHandler(e, obj: GraphObject): void {
-        this.setNodeHighlight(null);
-        console.log('node-MouseDrop------------' + this);
+        if (obj instanceof go.Link) {
+            //this.props.nodeDropedToHandler(obj.from,obj.to);
+            this.props.addNodeByDropLinkHandler('new');
+        }
     }
 
+    /**
+     * 鼠标移上
+     * @param e
+     * @param obj
+     */
+    private linkMouseEnterHandler(e: go.InputEvent, obj: GraphObject): void {
+        mouseType = '';
+        this.setNodeHighlight(obj);
+    }
+
+    /**
+     * 鼠标移开
+     * @param e
+     * @param obj
+     */
+    private linkMouseLeaveHandler(e: go.InputEvent, obj: GraphObject): void {
+        mouseType = '';
+        this.setNodeHighlight(null);
+    }
+
+    /**
+     * 鼠标 拖拽移上
+     * @param e
+     * @param obj
+     */
+    private linkMouseDragEnterHandler(e: go.InputEvent, obj: GraphObject): void {
+        mouseType = 'DRAG';
+        this.setNodeHighlight(obj);
+    }
+
+    /**
+     * 鼠标 拖拽移开
+     * @param e
+     * @param obj
+     */
+    private linkMouseDragLeaveHandler(e: go.InputEvent, obj: GraphObject, obj1: GraphObject): void {
+        mouseType = 'DRAG';
+        this.setNodeHighlight(null);
+    }
+
+    /**
+     * 鼠标 拖拽
+     * @param e
+     * @param obj
+     */
+    private linkMouseDropHandler(e: go.InputEvent, obj: any): void {
+        mouseType = '';
+        debugger;
+        let l = obj.jb;
+        if (l) {
+            this.props.linkDropedToHandler(l.from, l.to);
+            this.props.addNodeByDropLinkHandler('new');
+        }
+    }
+
+    /**
+     * 修改名称
+     * @param e
+     */
     private onTextEdited(e: go.DiagramEvent) {
         const tb = e.subject;
         if (tb === null) {
             return;
         }
         const node = tb.part;
-        if (node instanceof go.Node && this.props.onTextChange) {
-            this.props.onTextChange({ key: node.key as string, text: tb.text });
+        if (node instanceof go.Node && this.props.onTextChangeHandler) {
+            this.props.onTextChangeHandler({ key: node.key as string, text: tb.text });
         }
     }
 }

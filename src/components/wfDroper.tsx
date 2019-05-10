@@ -1,7 +1,7 @@
 import React from 'react';
 import { DropTarget, ConnectDropTarget, DropTargetMonitor, DropTargetConnector } from 'react-dnd';
 import './wfDiagram.css';
-import { DiagramState, modelSelector, NodeModel } from '../reducers/diagramReducer';
+import { DiagramState, modelSelector, WFNodeModel } from '../reducers/diagramReducer';
 import { connect } from 'react-redux';
 import { DiagramModel, LinkModel } from 'react-gojs';
 import WFDiagram from './wfDiagram';
@@ -10,7 +10,7 @@ interface WFDroperProps {
     canDrop: boolean;
     isOver: boolean;
     connectDropTarget: ConnectDropTarget;
-    model: DiagramModel<NodeModel, LinkModel>;
+    model: DiagramModel<WFNodeModel, LinkModel>;
 }
 
 const mapStateToProps = (state: DiagramState) => {
@@ -31,7 +31,7 @@ const WFDroper: React.FC<WFDroperProps> = ({ canDrop, isOver, connectDropTarget,
 
     return (
         <div className="wfDiagram" ref={connectDropTarget} style={{ backgroundColor: bgColor }}>
-            <div className="wfTip">{isActive ? 'Release to drop' : 'Drag a box here'}</div>
+            {/* <div className="wfTip">{isActive ? 'Release to drop' : 'Drag a box here'}</div> */}
             <WFDiagram model={model} />
         </div>
     );

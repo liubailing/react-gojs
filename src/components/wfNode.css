@@ -1,16 +1,24 @@
 .wfNode {
     display: block;
-    width: 80px;
-    height: 80px;
+    width: 60px;
+    height: 30px;
     border: 1px solid gray;
     margin: 5px 0 10px 10px;
     cursor: move;
-    line-height: 80px;
+    color: #ddd;
+    background-color: cadetblue;
+    text-align: center;
+    border: 1px solid #666;
+    border-radius: 5px;
+    font-size: 12px;
 }
 
 .wfNodeBtn {
+    color: #000;
+    background-color: #fff;
     line-height: normal;
     height: auto;
     cursor: pointer;
     padding: 5px 0;
+    border-radius: none;
 }

@@ -28,9 +28,6 @@ class WFContainer extends React.PureComponent<MyDiagramProps> {
         return (
             <div className="wfContainer">
                 <div className="wfNodes">
-                    <span className="wfNode" draggable={true}>
-                        测试
-                    </span>
                     <WFNode type={wfNodeType.Btn_Start} />
                     <WFNode type={wfNodeType.Btn_Reset} />
                     <WFNode type={wfNodeType.Click} />

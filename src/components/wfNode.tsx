@@ -11,6 +11,8 @@ export enum wfNodeType {
     Btn_Start = '开始',
     Btn_Reset = '重置',
     Click = '点击',
+    Condition = '条件',
+    Loop = '循坏',
     Data = '提取数据',
     End = '结束'
 }
@@ -42,27 +44,30 @@ const mapDispatchToProps = (
                     { key: 'Begin', label: 'Begin', color: 'lightblue', group: '', isGroup: false },
                     { key: 'End', label: 'End', color: 'grey', group: '', isGroup: false }
                 ],
-                linkDataArray: [{ from: 'Begin', to: 'End', color: 'pink' }]
+                linkDataArray: [{ from: 'Begin', to: 'End', color: 'pink', group: '' }]
             };
 
-            if (type == wfNodeType.Btn_Start) {
+            if (type === wfNodeType.Btn_Start) {
                 dispatch(init(initNodes));
             }
 
-            if (type == wfNodeType.Btn_Reset) {
+            if (type === wfNodeType.Btn_Reset) {
                 initNodes.nodeDataArray = [
-                    { key: 'Begin', label: '测试', color: 'lightblue', group: 'Begin', isGroup: false },
-                    { key: 'Beta', label: 'Beta', color: 'orange', group: 'Begin', isGroup: false },
-                    { key: 'Gamma', label: 'Gamma', color: 'lightgreen', group: 'Begin', isGroup: false },
-                    { key: '孤独', label: '孤独', color: 'lightgreen', group: 'Begin', isGroup: false },
-                    { key: 'Delta', label: 'Delta', color: 'pink', group: 'Begin', isGroup: false },
-                    { key: 'End', label: 'End', color: 'grey', group: 'Begin', isGroup: false }
+                    { key: 'Begin', label: '测试', color: 'lightblue', group: '', isGroup: false },
+                    { key: 'group0', label: 'group0', color: 'orange', group: '', isGroup: true },
+                    { key: 'g1', label: 'g1', color: 'lightgreen', group: 'group0', isGroup: false },
+                    { key: 'g11', label: 'g11', color: 'pink', group: 'group0', isGroup: false },
+                    { key: 'g2', label: 'g2', color: 'lightgreen', group: 'group0', isGroup: false },
+                    { key: 'g22', label: 'g22', color: 'pink', group: 'group0', isGroup: false },
+                    { key: 'End', label: 'End', color: 'grey', group: '', isGroup: false },
+                    { key: '孤独', label: '孤独', color: 'lightgreen', group: '', isGroup: false }
                 ];
                 initNodes.linkDataArray = [
-                    { from: 'Begin', to: 'Beta', color: 'pink' },
-                    { from: 'Beta', to: 'Gamma', color: 'pink' },
-                    { from: 'Beta', to: 'Delta', color: 'pink' },
-                    { from: 'Begin', to: 'End', color: 'pink' }
+                    { from: 'Begin', to: 'group0', color: 'pink', group: '' },
+                    { from: 'g1', to: 'g11', color: 'pink', group: '' },
+                    { from: 'g2', to: 'g22', color: 'pink', group: '' },
+                    // { from: 'Beta', to: 'Delta', color: 'pink' },
+                    { from: 'group0', to: 'End', color: 'pink', group: '' }
                 ];
                 dispatch(init(initNodes));
             }
@@ -82,6 +87,8 @@ const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, updateNodeColorHandl
                 <div
                     className="wfNode wfNodeBtn"
                     onClick={() => initHandler(type)}
+                    data-type={type}
+                    data-isGroup={[wfNodeType.Condition, wfNodeType.Loop].includes(type)}
                     title={`可${isBtn ? '点击' : '拖拽'} \n\r ${type}`}
                 >
                     {type}

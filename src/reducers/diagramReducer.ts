@@ -7,6 +7,7 @@ import {
     addNode,
     addNodeByDropNode,
     addNodeByDropLink,
+    //addNodeByDropGroup,
     nodeSelected,
     nodeDeselected,
     removeNode,
@@ -18,6 +19,7 @@ import {
     setDiagram,
     linkDropedTo,
     nodeDropedTo
+    //addGroup
 } from '../actions/diagram';
 import go, { Diagram } from 'gojs';
 import { BaseNodeModel, DiagramModel, LinkModel } from 'react-gojs';
@@ -30,7 +32,9 @@ export interface DiagramState {
     diagram: Diagram;
     model: DiagramModel<WFNodeModel, WFLinkModel>;
     selectedNodeKeys: string[];
+    fromNode: WFNodeModel;
     fromNodeKey: string;
+    toNode: WFNodeModel;
     toNodeKey: string;
     toLine: WFLinkModel;
 }
@@ -38,6 +42,7 @@ export interface DiagramState {
 export interface WFLinkModel extends LinkModel {
     color: string;
     canDroped?: boolean;
+    group: string;
 }
 
 export interface WFNodeModel extends BaseNodeModel {
@@ -65,8 +70,16 @@ const getOneNode = (payload: string): WFNodeModel => {
     return { key: payload, label: payload, color: getRandomColor(), group: payload, isGroup: false, canDroped: false };
 };
 
-const getLine = (from: string, to: string): WFLinkModel => {
-    return { from: from, to: to, color: getRandomColor(), canDroped: true };
+const getDefalutNode = (): WFNodeModel => {
+    return getOneNode('');
+};
+
+const getLink = (from: string, to: string, group: string): WFLinkModel => {
+    return { from: from, to: to, group: group, color: getRandomColor(), canDroped: true };
+};
+
+const getDefalutLink = (): WFLinkModel => {
+    return getLink('', '', '');
 };
 
 //得到一个随机 diagran 数组
@@ -176,7 +189,7 @@ const updateNodeTextHandler = (state: DiagramState, payload: UpdateNodeTextEvent
  */
 const addNodeHandler = (state: DiagramState, payload: string): DiagramState => {
     const linksToAdd: WFLinkModel[] = state.selectedNodeKeys.map(parent => {
-        return { from: parent, to: payload, color: 'pink' };
+        return { from: parent, to: payload, group: '', color: 'pink' };
     });
     return {
         ...state,
@@ -206,7 +219,7 @@ const addNodeAfterDropNodeHandler = (state: DiagramState, payload: string): Diag
             ...state.model,
             nodeDataArray: [...state.model.nodeDataArray, getOneNode(payload)],
             linkDataArray: state.toNodeKey
-                ? [...state.model.linkDataArray, getLine(state.toNodeKey, payload)]
+                ? [...state.model.linkDataArray, getLink(state.toNodeKey, payload, '')]
                 : [...state.model.linkDataArray]
         }
     };
@@ -223,8 +236,8 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, payload: string): Diag
     const linksToAdd: WFLinkModel[] = [];
     let linkToRemoveIndex = -1;
     if (state.toLine.from && state.toLine.to) {
-        linksToAdd.push(getLine(state.toLine.from, state.fromNodeKey));
-        linksToAdd.push(getLine(state.fromNodeKey, state.toLine.to));
+        linksToAdd.push(getLink(state.toLine.from, state.fromNodeKey, state.toLine.group));
+        linksToAdd.push(getLink(state.fromNodeKey, state.toLine.to, state.toLine.group));
 
         linkToRemoveIndex = state.model.linkDataArray.findIndex(
             link => link.from === state.toLine.from && link.to === state.toLine.to
@@ -233,7 +246,6 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, payload: string): Diag
 
     return {
         ...state,
-        toLine: getLine('', ''),
         model: {
             ...state.model,
             nodeDataArray: [...state.model.nodeDataArray],
@@ -358,9 +370,11 @@ export const diagramReducer: Reducer<DiagramState> = reducerWithInitialState<Dia
         linkDataArray: []
     },
     selectedNodeKeys: [],
+    fromNode: getDefalutNode(),
     fromNodeKey: '',
+    toNode: getDefalutNode(),
     toNodeKey: '',
-    toLine: getLine('', '')
+    toLine: getDefalutLink()
 })
     .case(init, initHandler)
     .case(getModel, getModelHandler)

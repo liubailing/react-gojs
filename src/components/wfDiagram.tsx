@@ -39,8 +39,8 @@ interface WFDroperDispatchProps {
     setDiagramHandler: (diagram: Diagram) => void;
     addNodeHandler: (name: string) => void;
     newNodeHandler: (name: string) => void;
-    linkDropedToHandler: (from: any, to: any) => void;
-    nodeDropedToHandler: (key: any) => void;
+    linkDropedToHandler: (link: WFLinkModel) => void;
+    nodeDropedToHandler: (key: string) => void;
     addNodeByDropLinkHandler: (name: any) => void;
     addNodeByDropNodeHandler: (name: string) => void;
 }
@@ -82,8 +82,8 @@ const mapDispatchToProps = (
         newNodeHandler: (name: string) => {
             dispatch(newNode(`${name}-${++count}`));
         },
-        linkDropedToHandler: (from: string, to: string) => {
-            dispatch(linkDropedTo({ from: from, to: to, color: '' }));
+        linkDropedToHandler: (link: WFLinkModel) => {
+            dispatch(linkDropedTo(link));
         },
         nodeDropedToHandler: (key: string) => {
             dispatch(nodeDropedTo(key));
@@ -108,17 +108,12 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
         super(props);
         this.createDiagram = this.createDiagram.bind(this);
         this.onTextEdited = this.onTextEdited.bind(this);
-        this.nodeMouseEnterHandler = this.nodeMouseEnterHandler.bind(this);
-        this.nodeMouseLeaveHandler = this.nodeMouseLeaveHandler.bind(this);
-        this.nodeMouseDropHandler = this.nodeMouseDropHandler.bind(this);
-        this.nodeMouseDragEnterHandler = this.nodeMouseDragEnterHandler.bind(this);
-        this.nodeMouseDragLeaveHandler = this.nodeMouseDragLeaveHandler.bind(this);
 
-        this.linkMouseEnterHandler = this.linkMouseEnterHandler.bind(this);
-        this.linkMouseLeaveHandler = this.linkMouseLeaveHandler.bind(this);
-        this.linkMouseDropHandler = this.linkMouseDropHandler.bind(this);
-        this.linkMouseDragEnterHandler = this.linkMouseDragEnterHandler.bind(this);
-        this.linkMouseDragLeaveHandler = this.linkMouseDragLeaveHandler.bind(this);
+        this.mouseEnterHandler = this.mouseEnterHandler.bind(this);
+        this.mouseLeaveHandler = this.mouseLeaveHandler.bind(this);
+        this.mouseDropHandler = this.mouseDropHandler.bind(this);
+        this.mouseDragEnterHandler = this.mouseDragEnterHandler.bind(this);
+        this.mouseDragLeaveHandler = this.mouseDragLeaveHandler.bind(this);
     }
 
     render() {
@@ -148,7 +143,9 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
             layout: $(go.TreeLayout, {
                 angle: 90,
                 arrangement: go.TreeLayout.ArrangementVertical,
-                treeStyle: go.TreeLayout.StyleLayered
+                treeStyle: go.TreeLayout.StyleLayered,
+                nodeSpacing: 80,
+                layerSpacing: 60
             }),
             TextEdited: this.onTextEdited
         });
@@ -162,16 +159,16 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
             go.Node,
             'Auto',
             {
-                mouseEnter: this.nodeMouseEnterHandler,
-                mouseLeave: this.nodeMouseLeaveHandler,
-                mouseDragEnter: this.nodeMouseDragEnterHandler,
-                mouseDragLeave: this.nodeMouseDragLeaveHandler,
-                mouseDrop: this.nodeMouseDropHandler,
+                mouseEnter: this.mouseEnterHandler,
+                mouseLeave: this.mouseLeaveHandler,
+                mouseDragEnter: this.mouseDragEnterHandler,
+                mouseDragLeave: this.mouseDragLeaveHandler,
+                mouseDrop: this.mouseDropHandler,
                 locationSpot: go.Spot.Center, // the location is the center of the Shape
                 resizeObjectName: 'SHAPE', // user can resize the Shape
                 selectionChanged: node => {
                     console.log('selectionChanged');
-                    this.props.onNodeSelectionHandler(node.key as string, node.isSelected);
+                    this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
                 }
             },
             new go.Binding('location'),
@@ -183,7 +180,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                 },
                 new go.Binding('fill', 'color'),
                 new go.Binding('fill', 'isHighlighted', function(h, shape) {
-                    if (h) return mouseType == 'DRAG' ? 'red' : 'green';
+                    if (h) return mouseType === 'DRAG' ? 'red' : 'green';
                     var c = shape.part.data.color;
                     return c ? c : 'white';
                 }).ofObject() // binding source is Node.isHighlighted
@@ -194,11 +191,11 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
         myDiagram.linkTemplate = $(
             go.Link,
             {
-                mouseEnter: this.linkMouseEnterHandler,
-                mouseLeave: this.linkMouseLeaveHandler,
-                mouseDragEnter: this.linkMouseDragEnterHandler,
-                mouseDragLeave: this.linkMouseDragLeaveHandler,
-                mouseDrop: this.linkMouseDropHandler,
+                mouseEnter: this.mouseEnterHandler,
+                mouseLeave: this.mouseLeaveHandler,
+                mouseDragEnter: this.mouseDragEnterHandler,
+                mouseDragLeave: this.mouseDragLeaveHandler,
+                mouseDrop: this.mouseDropHandler,
                 routing: go.Link.Orthogonal,
                 corner: 10
             },
@@ -210,7 +207,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                 },
                 new go.Binding('stroke', 'color'),
                 new go.Binding('stroke', 'isHighlighted', function(h, shape) {
-                    if (h) return mouseType == 'DRAG' ? 'red' : 'green';
+                    if (h) return mouseType === 'DRAG' ? 'red' : 'green';
                     var c = shape.part.data.color;
                     return c ? c : 'white';
                 }).ofObject() // binding source is Node.isHighlighted
@@ -221,7 +218,12 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                     toArrow: 'OpenTriangle',
                     stroke: 'red'
                 },
-                new go.Binding('stroke', 'color')
+                new go.Binding('stroke', 'color'),
+                new go.Binding('stroke', 'isHighlighted', function(h, shape) {
+                    if (h) return mouseType === 'DRAG' ? 'red' : 'green';
+                    var c = shape.part.data.color;
+                    return c ? c : 'white';
+                }).ofObject() // binding source is Node.isHighlighted
             )
         );
 
@@ -236,27 +238,58 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                     arrangement: go.TreeLayout.ArrangementHorizontal,
                     isRealtime: false
                 }),
+                mouseEnter: this.mouseEnterHandler,
+                mouseLeave: this.mouseLeaveHandler,
+                mouseDragEnter: this.mouseDragEnterHandler,
+                mouseDragLeave: this.mouseDragLeaveHandler,
+                mouseDrop: this.mouseDropHandler,
                 // the group begins unexpanded;
                 // upon expansion, a Diagram Listener will generate contents for the group
-                isSubGraphExpanded: false,
+                isSubGraphExpanded: true
                 // when a group is expanded, if it contains no parts, generate a subGraph inside of it
-                subGraphExpandedChanged: function(group) {
-                    if (group.memberParts.count === 0) {
-                    }
-                }
+                // subGraphExpandedChanged: function(group) {
+                //     if (group.memberParts.count === 0) {
+                //     }
+                // }
             },
-            $(go.Shape, 'Rectangle', { fill: null, stroke: 'gray', strokeWidth: 2 }),
+            $(
+                go.Shape,
+                'Rectangle',
+                {
+                    fill: '#fff',
+                    stroke: 'gray',
+                    strokeWidth: 1
+                },
+                new go.Binding('stroke', 'fff'),
+                new go.Binding('fill', 'isHighlighted', function(h, shape) {
+                    if (h) return mouseType === 'DRAG' ? 'red' : 'green';
+                    var c = shape.part.data.color;
+                    return c ? c : 'white';
+                }).ofObject() // binding source is Node.isHighlighted
+            ),
             $(
                 go.Panel,
                 'Vertical',
-                { defaultAlignment: go.Spot.Left, margin: 4 },
+                {
+                    defaultAlignment: go.Spot.Left,
+                    margin: 4
+                },
                 $(
                     go.Panel,
                     'Horizontal',
-                    { defaultAlignment: go.Spot.Top },
+                    {
+                        defaultAlignment: go.Spot.Top
+                    },
                     // the SubGraphExpanderButton is a panel that functions as a button to expand or collapse the subGraph
                     $('SubGraphExpanderButton'),
-                    $(go.TextBlock, { font: 'Bold 18px Sans-Serif', margin: 4 }, new go.Binding('text', 'key'))
+                    $(
+                        go.TextBlock,
+                        {
+                            font: 'Bold 18px Sans-Serif',
+                            margin: 4
+                        },
+                        new go.Binding('text', 'label')
+                    )
                 ),
                 // create a placeholder to represent the area where the contents of the group are
                 $(go.Placeholder, { padding: new go.Margin(0, 10) })
@@ -277,7 +310,12 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
         // Instead of finding every drag target,
         // we can add the event to the document and disregard
         // all elements that are not of class "draggable"
-        document.addEventListener(
+
+        let wfContainer: HTMLElement | null = document.getElementById('wfContainer');
+
+        if (!wfContainer) return;
+
+        wfContainer.addEventListener(
             'dragstart',
             function(event: any) {
                 console.log(event.target.className);
@@ -289,12 +327,13 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                 dragged.offsetX = event.offsetX - dragged.clientWidth / 2;
                 dragged.offsetY = event.offsetY - dragged.clientHeight / 2;
                 // Objects during drag will have a red border
-                event.target.style.border = '2px solid red';
+                event.target.style.border = '1px solid red';
+                event.target.style.opCity = '0.4';
             },
             false
         );
         // This event resets styles after a drag has completed (successfully or not)
-        document.addEventListener(
+        wfContainer.addEventListener(
             'dragend',
             function(event) {
                 // reset the border of the dragged element
@@ -398,11 +437,9 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                         var curnode: any = myDiagram.findPartAt(point, true);
 
                         if (curnode instanceof go.Link) {
-                            console.log('----------3333333333333333333-----------');
-                            //_this.props.nodeDropedToHandler(curnode.jb.from,curnode.to);
                             _this.props.addNodeByDropLinkHandler('new');
                         } else if (curnode instanceof go.Node) {
-                            _this.props.nodeDropedToHandler(curnode.key);
+                            _this.props.nodeDropedToHandler(curnode.key as string);
                             _this.props.addNodeByDropNodeHandler('new');
                         } else if (curnode instanceof go.Diagram) {
                         } else if (curnode instanceof go.Group) {
@@ -450,38 +487,12 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
         myDiagram.skipsUndoManager = oldskips;
     }
 
-    private nodeMouseEnterHandler(e, obj: GraphObject): void {
-        this.setNodeHighlight(obj);
-        console.log('node-MouseEnter');
-    }
-
-    private nodeMouseLeaveHandler(e, obj: GraphObject): void {
-        this.setNodeHighlight(null);
-        console.log('node-MouseLeave');
-    }
-
-    private nodeMouseDragEnterHandler(e, obj: GraphObject): void {
-        console.log('node-DragEnter');
-    }
-
-    private nodeMouseDropHandler(e, obj: GraphObject): void {
-        if (obj instanceof go.Node) {
-        }
-        console.log('node-MouseDrop------------' + this);
-    }
-    private nodeMouseDragLeaveHandler(e, obj: GraphObject): void {
-        if (obj instanceof go.Link) {
-            //this.props.nodeDropedToHandler(obj.from,obj.to);
-            this.props.addNodeByDropLinkHandler('new');
-        }
-    }
-
     /**
      * 鼠标移上
      * @param e
      * @param obj
      */
-    private linkMouseEnterHandler(e: go.InputEvent, obj: GraphObject): void {
+    private mouseEnterHandler(e: go.InputEvent, obj: GraphObject): void {
         mouseType = '';
         this.setNodeHighlight(obj);
     }
@@ -491,7 +502,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
      * @param e
      * @param obj
      */
-    private linkMouseLeaveHandler(e: go.InputEvent, obj: GraphObject): void {
+    private mouseLeaveHandler(e: go.InputEvent, obj: GraphObject): void {
         mouseType = '';
         this.setNodeHighlight(null);
     }
@@ -501,7 +512,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
      * @param e
      * @param obj
      */
-    private linkMouseDragEnterHandler(e: go.InputEvent, obj: GraphObject): void {
+    private mouseDragEnterHandler(e: go.InputEvent, obj: GraphObject): void {
         mouseType = 'DRAG';
         this.setNodeHighlight(obj);
     }
@@ -511,7 +522,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
      * @param e
      * @param obj
      */
-    private linkMouseDragLeaveHandler(e: go.InputEvent, obj: GraphObject, obj1: GraphObject): void {
+    private mouseDragLeaveHandler(e: go.InputEvent, obj: GraphObject, obj1: GraphObject): void {
         mouseType = 'DRAG';
         this.setNodeHighlight(null);
     }
@@ -521,13 +532,14 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
      * @param e
      * @param obj
      */
-    private linkMouseDropHandler(e: go.InputEvent, obj: any): void {
+    private mouseDropHandler(e: go.InputEvent, obj: any): void {
         mouseType = '';
-        debugger;
-        let l = obj.jb;
-        if (l) {
-            this.props.linkDropedToHandler(l.from, l.to);
-            this.props.addNodeByDropLinkHandler('new');
+        if (obj instanceof go.Link) {
+            let l = (obj as any)!.jb;
+            if (l) {
+                this.props.linkDropedToHandler(l as WFLinkModel);
+                this.props.addNodeByDropLinkHandler('new');
+            }
         }
     }
 

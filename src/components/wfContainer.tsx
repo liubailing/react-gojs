@@ -47,12 +47,7 @@ class WFContainer extends React.PureComponent<MyDiagramProps> {
         this.intAct();
     }
 
-    intAct() {
-        let div: HTMLElement | null = document.getElementById('divDiagram');
-        if (div) {
-            console.log(div.clientHeight);
-        }
-    }
+    intAct() {}
 }
 
 export default connect(

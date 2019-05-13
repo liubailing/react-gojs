@@ -26,8 +26,8 @@ import {
 import go, { Diagram } from 'gojs';
 import { BaseNodeModel, DiagramModel, LinkModel } from 'react-gojs';
 
-export const randomKey = (len): string => {
-    len = len || 32;
+const randomKey = (len: number = 8): string => {
+    len = len < 1 ? 8 : len;
     let $chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678'; /****默认去掉了容易混淆的字符oOLl,9gq,Vv,Uu,I1****/
     let maxPos = $chars.length;
     let pwd = '';
@@ -92,7 +92,14 @@ const getRandomColor = () => {
 };
 
 const getOneNode = (payload: string, group: string = ''): WFNodeModel => {
-    return { key: payload, label: payload, color: getRandomColor(), group: group, isGroup: false, canDroped: false };
+    return {
+        key: randomKey(),
+        label: payload,
+        color: getRandomColor(),
+        group: group,
+        isGroup: false,
+        canDroped: false
+    };
 };
 
 // const getDefalutNode = (): WFNodeModel => {
@@ -222,19 +229,20 @@ const addNodeAfterDropNodeHandler = (state: DiagramState, payload: string): Diag
                     ? [...state.model.linkDataArray, getLink(state.toNodeKey, state.fromNodeKey, '')]
                     : [...state.model.linkDataArray]
             },
-            fromNode: null,
-            fromNodeKey: '',
+            // fromNode: null,
+            // fromNodeKey: '',
             toNodeKey: '',
             toNode: null
         };
     } else {
+        var newNode = getOneNode(payload, state.toNode.group);
         return {
             ...state,
             model: {
                 ...state.model,
-                nodeDataArray: [...state.model.nodeDataArray, getOneNode(payload, state.toNode.group)],
+                nodeDataArray: [...state.model.nodeDataArray, newNode],
                 linkDataArray: state.toNodeKey
-                    ? [...state.model.linkDataArray, getLink(state.toNodeKey, payload, '')]
+                    ? [...state.model.linkDataArray, getLink(state.toNodeKey, newNode.key, '')]
                     : [...state.model.linkDataArray]
             },
             fromNode: null,

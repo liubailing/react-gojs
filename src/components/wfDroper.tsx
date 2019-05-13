@@ -147,7 +147,12 @@ const WFDroper: React.FC<WFDroperProps> = ({
                         }
                         console.log('-------------------Group ----------------');
                     } else if (curnode instanceof go.Node) {
-                        console.log('-------------------Node ----------------');
+                        let l = (curnode as any)!.jb;
+                        if (l) {
+                            nodeDropedToHandler(l.key as string);
+                            addNodeByDropNodeHandler('new');
+                        }
+                        console.log('-------------------Group ----------------');
                     } else {
                     }
                 }

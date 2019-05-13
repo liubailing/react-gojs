@@ -2,6 +2,7 @@ import { actionCreatorFactory } from 'typescript-fsa';
 import { WFNodeModel, WFLinkModel } from '../reducers/diagramReducer';
 import { DiagramModel } from 'react-gojs';
 import { Diagram } from 'gojs';
+import { wfNodeType } from '../components/wfNode';
 
 const actionCreator = actionCreatorFactory('DIAGRAM');
 
@@ -10,10 +11,15 @@ export interface UpdateNodeTextEvent {
     text: string;
 }
 
+export interface DragNodeEvent {
+    type: wfNodeType;
+    event: any;
+}
+
 export const init = actionCreator<DiagramModel<WFNodeModel, WFLinkModel>>('INIT');
 export const getDiagram = actionCreator('Get_Diagram');
 export const setDiagram = actionCreator<Diagram>('Set_Diagram');
-export const getModel = actionCreator<number>('Get_Model');
+export const setNodeHighlight = actionCreator<any>('Set_Node_Highlight');
 
 /**
  * 节点相关操作
@@ -41,3 +47,9 @@ export const removeLink = actionCreator<WFLinkModel>('REMOVE_LINK');
  */
 
 //export const addGroup = actionCreator<string>('ADD_NODE');
+
+/**
+ * WFNode 相关操作
+ */
+export const dragStartWfNode = actionCreator<DragNodeEvent>('DragStart_WfNode');
+export const dragEndWfNode = actionCreator<DragNodeEvent>('DragEnd_WfNode');

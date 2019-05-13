@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import { Action } from 'typescript-fsa';
 import { DiagramState, WFNodeModel, WFLinkModel } from '../reducers/diagramReducer';
 import { DiagramModel } from 'react-gojs';
-import { init, updateNodeColor, addNode } from '../actions/diagram';
+import { init, dragStartWfNode, dragEndWfNode, DragNodeEvent } from '../actions/diagram';
 import './wfNode.css';
 
 export enum wfNodeType {
@@ -25,17 +25,16 @@ const mapStateToProps = (state: DiagramState) => {
 
 interface WFNodeDispatchProps {
     initHandler: (type: wfNodeType) => void;
-    updateNodeColorHandler: () => void;
-    addNodeHandler: (type: wfNodeType) => void;
+    dragStartWfNodeHandler: (event: DragNodeEvent) => void;
+    dragEndWfNodeHandler: (event: DragNodeEvent) => void;
 }
 
 interface WFNodeProps extends WFNodeDispatchProps {
     type: wfNodeType;
 }
 
-let count = 0;
 const mapDispatchToProps = (
-    dispatch: Dispatch<Action<DiagramModel<WFNodeModel, WFLinkModel>> | Action<string> | Action<void> | Action<number>>
+    dispatch: Dispatch<Action<DiagramModel<WFNodeModel, WFLinkModel>> | Action<DragNodeEvent>>
 ): WFNodeDispatchProps => {
     return {
         initHandler: (type: wfNodeType) => {
@@ -64,33 +63,27 @@ const mapDispatchToProps = (
                 ];
                 initNodes.linkDataArray = [
                     { from: 'Begin', to: 'group0', color: 'pink', group: '' },
-                    { from: 'g1', to: 'g11', color: 'pink', group: '' },
-                    { from: 'g2', to: 'g22', color: 'pink', group: '' },
+                    { from: 'g1', to: 'g11', color: 'pink', group: 'group0' },
+                    { from: 'g2', to: 'g22', color: 'pink', group: 'group0' },
                     // { from: 'Beta', to: 'Delta', color: 'pink' },
                     { from: 'group0', to: 'End', color: 'pink', group: '' }
                 ];
                 dispatch(init(initNodes));
             }
         },
-        updateNodeColorHandler: () => dispatch(updateNodeColor()),
-        addNodeHandler: type => {
-            dispatch(addNode(`${type}-${++count}`));
+        dragStartWfNodeHandler: (event: DragNodeEvent) => dispatch(dragStartWfNode(event)),
+        dragEndWfNodeHandler: (event: DragNodeEvent) => {
+            dispatch(dragEndWfNode(event));
         }
     };
 };
 
-const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, updateNodeColorHandler, addNodeHandler }) => {
+const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, dragStartWfNodeHandler, dragEndWfNodeHandler }) => {
     let isBtn = [wfNodeType.Btn_Start, wfNodeType.Btn_Reset].includes(type);
     return (
         <div>
             {isBtn && (
-                <div
-                    className="wfNode wfNodeBtn"
-                    onClick={() => initHandler(type)}
-                    data-type={type}
-                    data-isGroup={[wfNodeType.Condition, wfNodeType.Loop].includes(type)}
-                    title={`可${isBtn ? '点击' : '拖拽'} \n\r ${type}`}
-                >
+                <div className="wfNode wfNodeBtn" onClick={() => initHandler(type)} title={`${type}`}>
                     {type}
                 </div>
             )}
@@ -98,8 +91,19 @@ const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, updateNodeColorHandl
                 <div
                     className="wfNode"
                     draggable={true}
+                    data-type={type}
                     onClick={() => initHandler(type)}
-                    title={`可${isBtn ? '点击' : '拖拽'} \n\r ${type}`}
+                    onDragStart={(event: any) => {
+                        if (event.target.className !== 'wfNode') return;
+                        event.dataTransfer.setData('text', event.target.textContent);
+                        dragStartWfNodeHandler({ type: type, event: event });
+                    }}
+                    onDragEnd={(event: any) => {
+                        if (event.target.className !== 'wfNode') return;
+                        event.dataTransfer.setData('text', '');
+                        dragEndWfNodeHandler({ type: type, event: event });
+                    }}
+                    title={`可拖拽 \n\r ${type}`}
                 >
                     {type}
                 </div>

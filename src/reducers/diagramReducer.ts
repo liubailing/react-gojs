@@ -3,7 +3,6 @@ import { Reducer } from 'redux';
 import {
     init,
     updateNodeColor,
-    newNode,
     addNode,
     addNodeByDropNode,
     addNodeByDropLink,
@@ -14,44 +13,72 @@ import {
     removeLink,
     UpdateNodeText,
     UpdateNodeTextEvent,
-    getModel,
     getDiagram,
     setDiagram,
     linkDropedTo,
-    nodeDropedTo
+    nodeDropedTo,
+    dragStartWfNode,
+    dragEndWfNode,
+    DragNodeEvent,
+    setNodeHighlight
     //addGroup
 } from '../actions/diagram';
 import go, { Diagram } from 'gojs';
 import { BaseNodeModel, DiagramModel, LinkModel } from 'react-gojs';
 
+export const randomKey = (len): string => {
+    len = len || 32;
+    let $chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678'; /****默认去掉了容易混淆的字符oOLl,9gq,Vv,Uu,I1****/
+    let maxPos = $chars.length;
+    let pwd = '';
+    for (let i = 0; i < len; i++) {
+        pwd += $chars.charAt(Math.floor(Math.random() * maxPos));
+    }
+    return pwd;
+};
+
+export const colors = {
+    hover_bg: '#ddd',
+    drag_bg: 'red',
+    link: 'green',
+    brder: '#000',
+    backgroud: '#666',
+    font: '#000',
+    hover_font: '#ddd'
+};
+
 /**
  * store 管理数据
  */
 export interface DiagramState {
-    newNode: WFNodeModel;
+    drager: any;
+    newNode: WFNodeModel | null;
     diagram: Diagram;
     model: DiagramModel<WFNodeModel, WFLinkModel>;
     selectedNodeKeys: string[];
-    fromNode: WFNodeModel;
+    fromNode: WFNodeModel | null;
     fromNodeKey: string;
-    toNode: WFNodeModel;
+    toNode: WFNodeModel | null;
     toNodeKey: string;
-    toLine: WFLinkModel;
+    toLine: WFLinkModel | null;
 }
 
 export interface WFLinkModel extends LinkModel {
-    color: string;
-    canDroped?: boolean;
     group: string;
+    canDroped?: boolean;
+    color?: string;
 }
 
 export interface WFNodeModel extends BaseNodeModel {
     label: string;
-    color: string;
     group: string;
     isGroup: boolean;
+    color?: string;
     canDroped?: boolean;
 }
+
+//let _drager:any;
+const colorArr = ['lightblue', 'orange', 'lightgreen', 'pink', 'yellow', 'red', 'grey', 'magenta', 'cyan'];
 
 const initHandler = (state: DiagramState, payload: DiagramModel<WFNodeModel, WFLinkModel>): DiagramState => {
     return {
@@ -60,91 +87,27 @@ const initHandler = (state: DiagramState, payload: DiagramModel<WFNodeModel, WFL
     };
 };
 
-const colors = ['lightblue', 'orange', 'lightgreen', 'pink', 'yellow', 'red', 'grey', 'magenta', 'cyan'];
-
 const getRandomColor = () => {
-    return colors[Math.floor(Math.random() * colors.length)];
+    return colorArr[Math.floor(Math.random() * colorArr.length)];
 };
 
-const getOneNode = (payload: string): WFNodeModel => {
-    return { key: payload, label: payload, color: getRandomColor(), group: payload, isGroup: false, canDroped: false };
+const getOneNode = (payload: string, group: string = ''): WFNodeModel => {
+    return { key: payload, label: payload, color: getRandomColor(), group: group, isGroup: false, canDroped: false };
 };
 
-const getDefalutNode = (): WFNodeModel => {
-    return getOneNode('');
-};
+// const getDefalutNode = (): WFNodeModel => {
+//     return getOneNode('');
+// };
 
 const getLink = (from: string, to: string, group: string): WFLinkModel => {
     return { from: from, to: to, group: group, color: getRandomColor(), canDroped: true };
 };
 
-const getDefalutLink = (): WFLinkModel => {
-    return getLink('', '', '');
-};
-
-//得到一个随机 diagran 数组
-const getModelHandler = (state: DiagramState, nodeCount: number): DiagramState => {
-    let param = {
-        groupCount: 2,
-        nodeCount: 10
-    };
-
-    let addedKeys: Array<string> = []; // this will contain the keys of all nodes created
-    let groups: Array<WFNodeModel> = [];
-    let nodes: Array<WFNodeModel> = [];
-
-    // create a random number of groups
-    // ensure there are at least 10 groups in the diagram
-
-    for (let i = 0; i < param.groupCount; i++) {
-        let name = 'group' + i;
-        groups.push({
-            key: name,
-            label: name,
-            isGroup: true,
-            group: name,
-            color: getRandomColor()
-        });
-        addedKeys.push(name);
-    }
-    let nodeIds = Math.floor(Math.random() * param.nodeCount) + param.groupCount;
-    // create a random number of non-group nodes
-    for (let i = 0; i < nodeIds; i++) {
-        let groupid = '';
-        if (i / 3 > 0) {
-            groupid = groups[Math.random() * param.groupCount]!.group!;
-        }
-        let color = getRandomColor();
-        let name = color + i;
-        nodes.push({
-            key: name,
-            label: name,
-            isGroup: false,
-            group: groupid,
-            color: getRandomColor()
-        });
-        addedKeys.push(name);
-    }
-    // add at least one link from each node to another
-    // this could result in clusters of nodes unreachable from each other, but no lone nodes
-    //var arr = [];
-    // for (var x in addedKeys) arr.push(addedKeys[x]);
-    // arr.sort(function (x, y) { return Math.random() - 1; });
-    // for (var i = 0; i < arr.length; i++) {
-    //     var from = Math.floor(Math.random() * (arr.length - i)) + i;
-    //     if (from !== i) {
-    //         model.linkDataArray.push({ from: arr[from], to: arr[i]});
-    //     }
-    // }
-    state.model.nodeDataArray = [...groups, ...nodes];
-    return state;
-};
-
-const getNodeHandler = (state: DiagramState, payload: string): DiagramState => {
-    if (!payload) return state;
-    state;
-    return { ...state, newNode: getOneNode(payload) };
-};
+// const getNodeHandler = (state: DiagramState, payload: string): DiagramState => {
+//     if (!payload) return state;
+//     state;
+//     return { ...state, newNode: getOneNode(payload) };
+// };
 
 const updateNodeColorHandler = (state: DiagramState): DiagramState => {
     const updatedNodes = state.model.nodeDataArray.map(node => {
@@ -163,6 +126,11 @@ const updateNodeColorHandler = (state: DiagramState): DiagramState => {
     };
 };
 
+/**
+ *
+ * @param state
+ * @param payload
+ */
 const updateNodeTextHandler = (state: DiagramState, payload: UpdateNodeTextEvent): DiagramState => {
     const nodeIndex = state.model.nodeDataArray.findIndex(node => node.key === payload.key);
 
@@ -210,19 +178,71 @@ const addNodeHandler = (state: DiagramState, payload: string): DiagramState => {
  * @param payload
  */
 const addNodeAfterDropNodeHandler = (state: DiagramState, payload: string): DiagramState => {
-    if (!payload || !payload) return state;
+    if (!state.toNode) return state;
 
-    return {
-        ...state,
-        toNodeKey: '',
-        model: {
-            ...state.model,
-            nodeDataArray: [...state.model.nodeDataArray, getOneNode(payload)],
-            linkDataArray: state.toNodeKey
-                ? [...state.model.linkDataArray, getLink(state.toNodeKey, payload, '')]
-                : [...state.model.linkDataArray]
+    //判断是不是新增
+    if (state.fromNode && state.fromNode.key == state.fromNodeKey) {
+        //1、 组内拖动某个节点
+        if (state.toNode.isGroup) {
+            //2、外部节点拖到组内
+            if (state.toNode.key === state.fromNode.group) {
+                return state;
+            } else {
+                /**
+                 * 改变节点分组
+                 */
+                state.model.nodeDataArray.forEach(x => {
+                    if (x.key === state.fromNodeKey) {
+                        x.group = state.toNode!.key;
+                    }
+                });
+                return {
+                    ...state,
+                    model: {
+                        ...state.model
+                    }
+                };
+            }
         }
-    };
+
+        /**
+         * 改变节点分组
+         */
+        state.model.nodeDataArray.forEach(x => {
+            if (x.key === state.fromNodeKey) {
+                x.group = state.toNode!.group;
+            }
+        });
+
+        return {
+            ...state,
+            model: {
+                ...state.model,
+                linkDataArray: state.toNodeKey
+                    ? [...state.model.linkDataArray, getLink(state.toNodeKey, state.fromNodeKey, '')]
+                    : [...state.model.linkDataArray]
+            },
+            fromNode: null,
+            fromNodeKey: '',
+            toNodeKey: '',
+            toNode: null
+        };
+    } else {
+        return {
+            ...state,
+            model: {
+                ...state.model,
+                nodeDataArray: [...state.model.nodeDataArray, getOneNode(payload, state.toNode.group)],
+                linkDataArray: state.toNodeKey
+                    ? [...state.model.linkDataArray, getLink(state.toNodeKey, payload, '')]
+                    : [...state.model.linkDataArray]
+            },
+            fromNode: null,
+            fromNodeKey: '',
+            toNodeKey: '',
+            toNode: null
+        };
+    }
 };
 
 /**
@@ -240,9 +260,18 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, payload: string): Diag
         linksToAdd.push(getLink(state.fromNodeKey, state.toLine.to, state.toLine.group));
 
         linkToRemoveIndex = state.model.linkDataArray.findIndex(
-            link => link.from === state.toLine.from && link.to === state.toLine.to
+            link => link.from === state.toLine!.from && link.to === state.toLine!.to
         );
     }
+
+    /**
+     * 改变节点分组
+     */
+    state.model.nodeDataArray.forEach(x => {
+        if (x.key === state.fromNodeKey) {
+            x.group = state.toLine!.group;
+        }
+    });
 
     return {
         ...state,
@@ -261,7 +290,7 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, payload: string): Diag
 };
 
 /**
- * 删除线
+ * 删除 节点
  * @param state
  * @param payload
  */
@@ -282,6 +311,11 @@ const removeNodeHandler = (state: DiagramState, payload: string): DiagramState =
     };
 };
 
+/**
+ * 删除 连线
+ * @param state
+ * @param payload
+ */
 const removeLinkHandler = (state: DiagramState, payload: WFLinkModel): DiagramState => {
     const linkToRemoveIndex = state.model.linkDataArray.findIndex(
         link => link.from === payload.from && link.to === payload.to
@@ -307,9 +341,12 @@ const removeLinkHandler = (state: DiagramState, payload: WFLinkModel): DiagramSt
  * @param payload
  */
 const nodeSelectedHandler = (state: DiagramState, payload: string): DiagramState => {
+    const ind = state.model.nodeDataArray.findIndex(x => x.key == payload);
+
     return {
         ...state,
         fromNodeKey: payload,
+        fromNode: state.model.nodeDataArray[ind],
         selectedNodeKeys: [...state.selectedNodeKeys, payload]
     };
 };
@@ -322,6 +359,7 @@ const nodeDeselectedHandler = (state: DiagramState, payload: string): DiagramSta
     return {
         ...state,
         fromNodeKey: '',
+        fromNode: null,
         selectedNodeKeys: [
             ...state.selectedNodeKeys.slice(0, nodeIndexToRemove),
             ...state.selectedNodeKeys.slice(nodeIndexToRemove + 1)
@@ -335,8 +373,11 @@ const nodeDeselectedHandler = (state: DiagramState, payload: string): DiagramSta
  * @param payload
  */
 const nodeDropedtoHandler = (state: DiagramState, payload: string): DiagramState => {
+    const ind = state.model.nodeDataArray.findIndex(x => x.key == payload);
+
     return {
         ...state,
+        toNode: state.model.nodeDataArray[ind],
         toNodeKey: payload
     };
 };
@@ -355,6 +396,7 @@ const linkDropedHandler = (state: DiagramState, payload: WFLinkModel): DiagramSt
 
 const setDiagramHandler = (state: DiagramState, payload: Diagram): DiagramState => {
     state.diagram = payload;
+    //nitDrag(state);
     return state;
 };
 
@@ -362,26 +404,54 @@ const getDiagramHandler = (state: DiagramState): DiagramState => {
     return state;
 };
 
+const dragStartWfNodeHandler = (state: DiagramState, payload: DragNodeEvent): DiagramState => {
+    payload.event.target.style.border = '1px solid red';
+    state.drager = payload.event.target;
+    return state;
+};
+
+const dragEndWfNodeHandler = (state: DiagramState, payload: DragNodeEvent): DiagramState => {
+    payload.event.target.style.border = '';
+    state.drager = null;
+    return state;
+};
+
+const setNodeHighlightHander = (state: DiagramState, node: any): DiagramState => {
+    // may be null
+    var oldskips = state.diagram.skipsUndoManager;
+    state.diagram.skipsUndoManager = true;
+    state.diagram.startTransaction('highlight');
+    if (node !== null) {
+        state.diagram.highlight(node);
+    } else {
+        state.diagram.clearHighlighteds();
+    }
+    state.diagram.commitTransaction('highlight');
+    state.diagram.skipsUndoManager = oldskips;
+
+    return state;
+};
+
 export const diagramReducer: Reducer<DiagramState> = reducerWithInitialState<DiagramState>({
-    newNode: getOneNode(''),
+    drager: null,
+    newNode: null,
     diagram: new go.Diagram(),
     model: {
         nodeDataArray: [getOneNode('Root')],
         linkDataArray: []
     },
     selectedNodeKeys: [],
-    fromNode: getDefalutNode(),
+    fromNode: null,
     fromNodeKey: '',
-    toNode: getDefalutNode(),
+    toNode: null,
     toNodeKey: '',
-    toLine: getDefalutLink()
+    toLine: null
 })
     .case(init, initHandler)
-    .case(getModel, getModelHandler)
     .case(updateNodeColor, updateNodeColorHandler)
     .case(UpdateNodeText, updateNodeTextHandler)
 
-    .case(newNode, getNodeHandler)
+    //.case(newNode, getNodeHandler)
     .case(addNode, addNodeHandler)
     .case(addNodeByDropNode, addNodeAfterDropNodeHandler)
     .case(addNodeByDropLink, addNodeAfterDropLinkHandler)
@@ -397,7 +467,14 @@ export const diagramReducer: Reducer<DiagramState> = reducerWithInitialState<Dia
 
     .case(setDiagram, setDiagramHandler)
     .case(getDiagram, getDiagramHandler)
+
+    .case(dragStartWfNode, dragStartWfNodeHandler)
+    .case(dragEndWfNode, dragEndWfNodeHandler)
+    .case(setNodeHighlight, setNodeHighlightHander)
     .build();
 
-export const modelSelector = (state: DiagramState) => state.model;
+export const diagramState = (state: DiagramState) => state;
+export const modelSelector = (state: DiagramState) => {
+    return state.model;
+};
 export const nodeSelectionSelector = (state: DiagramState) => state.selectedNodeKeys;

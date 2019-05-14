@@ -7,10 +7,19 @@ import { wfNodeType } from '../components/wfNode';
 const actionCreator = actionCreatorFactory('DIAGRAM');
 
 /**
+ * 消息提示
+ */
+export interface WFMsgEvent {
+    type: wfNodeType; // "success|warn|warn"
+    msg: string;
+}
+
+/**
  * 左侧拖拽相关
  */
 export interface DragNodeEvent {
     type: wfNodeType;
+    name: string;
     // tslint:disable-next-line: no-any
     event: any;
 }
@@ -19,13 +28,16 @@ export interface DragNodeEvent {
  * Node 相关操作类型
  */
 export enum NodeEventType {
-    add = 'add_new',
-    selected = 'select_node',
-    delete = 'delete_node',
-    rename = 'reset_name',
-    move2node = 'move_to_node',
-    move2group = 'move_to_group',
-    move2link = 'move_to_link'
+    Add = 'Add_new',
+    Selected = 'Select_node',
+    Delete = 'Delete_node',
+    Rename = 'Reset_name',
+    Drag2Node = 'Drag_to_node',
+    Drag2Group = 'Drag_to_group',
+    Drag2Link = 'Drag_to_link',
+    Move2Node = 'Move_to_node',
+    Move2Group = 'Move_to_group',
+    Move2Link = 'Move_to_link'
 }
 
 /**
@@ -36,7 +48,8 @@ export interface NodeEvent {
     name?: string;
     key?: string;
     toKey?: string;
-    tolink?: WFLinkModel;
+    toLink?: WFLinkModel;
+    toNode?: WFNodeModel;
 }
 
 export const init = actionCreator<DiagramModel<WFNodeModel, WFLinkModel>>('INIT');
@@ -50,8 +63,8 @@ export const setNodeHighlight = actionCreator<any>('Set_Node_Highlight');
  */
 export const newNode = actionCreator<string>('Get_Node');
 export const addNode = actionCreator<string>('ADD_NODE');
-export const addNodeByDropNode = actionCreator<string>('ADD_NODE_DropNode');
-export const addNodeByDropLink = actionCreator<string>('ADD_NODE_DropLink');
+export const addNodeByDropNode = actionCreator<NodeEvent>('ADD_NODE_DropNode');
+export const addNodeByDropLink = actionCreator<NodeEvent>('ADD_NODE_DropLink');
 //export const addNodeByDropGroup = actionCreator<string>('ADD_NODE_DropGroup');
 export const nodeSelected = actionCreator<string>('NODE_SELECTED');
 export const nodeDeselected = actionCreator<string>('NODE_DESELECTED');

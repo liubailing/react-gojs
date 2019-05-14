@@ -57,16 +57,17 @@ export const colors = {
  */
 export interface DiagramState {
     // tslint:disable-next-line: no-any
-    drager: any;
-    newNode: WFNodeModel | null;
+    drager: DragNodeEvent | null;
+    //newNode: WFNodeModel | null;
     diagram: Diagram;
     model: DiagramModel<WFNodeModel, WFLinkModel>;
     selectedNodeKeys: string[];
-    fromNode: WFNodeModel | null;
-    fromNodeKey: string;
-    toNode: WFNodeModel | null;
-    toNodeKey: string;
-    toLine: WFLinkModel | null;
+    currKey: string;
+    // fromNode: WFNodeModel | null;
+    // fromNodeKey: string;
+    // toNode: WFNodeModel | null;
+    // toNodeKey: string;
+    // toLine: WFLinkModel | null;
 }
 
 export interface WFLinkModel extends LinkModel {
@@ -136,7 +137,7 @@ const updateNodeColorHandler = (state: DiagramState): DiagramState => {
  * @param payload
  */
 const updateNodeTextHandler = (state: DiagramState, payload: NodeEvent): DiagramState => {
-    if (payload.eType !== NodeEventType.rename) return state;
+    if (payload.eType !== NodeEventType.Rename) return state;
     if (!payload.key || !payload.name) return state;
 
     const nodeIndex = state.model.nodeDataArray.findIndex(node => node.key === payload.key);
@@ -184,73 +185,54 @@ const addNodeHandler = (state: DiagramState, payload: string): DiagramState => {
  * @param state
  * @param payload
  */
-const addNodeAfterDropNodeHandler = (state: DiagramState, payload: string): DiagramState => {
-    if (!state.toNode) return state;
+const addNodeAfterDropNodeHandler = (state: DiagramState, ev: NodeEvent): DiagramState => {
+    if (!ev.toNode || !ev.toNode.key) return state;
 
-    //判断是不是新增
-    if (state.fromNode && state.fromNode.key == state.fromNodeKey) {
-        //1、 组内拖动某个节点
-        if (state.toNode.isGroup) {
-            //2、外部节点拖到组内
-            if (state.toNode.key === state.fromNode.group) {
-                return state;
-            } else {
-                /**
-                 * 改变节点分组
-                 */
-                state.model.nodeDataArray.forEach(x => {
-                    if (x.key === state.fromNodeKey) {
-                        x.group = state.toNode!.key;
-                    }
-                });
-                return {
-                    ...state,
-                    model: {
-                        ...state.model
-                    }
-                };
+    let node: WFNodeModel;
+    let nodeAdd: boolean = false;
+    let linkAdd: boolean = true;
+
+    // 1、锁定节点
+    switch (ev.eType) {
+        case NodeEventType.Drag2Node:
+        case NodeEventType.Drag2Group:
+            //1.1 如果是新节点
+            if (!state.drager) return state;
+            node = getOneNode(state.drager.name, ev.toNode.group);
+            if (ev.eType == NodeEventType.Drag2Group) {
+                node.group = ev.toNode.key;
+                linkAdd = false;
             }
-        }
-
-        /**
-         * 改变节点分组
-         */
-        state.model.nodeDataArray.forEach(x => {
-            if (x.key === state.fromNodeKey) {
-                x.group = state.toNode!.group;
+            nodeAdd = true;
+            break;
+        case NodeEventType.Move2Node:
+        case NodeEventType.Move2Group:
+            // 1.2 如果是拖动已有节点
+            const ind = state.model.nodeDataArray.findIndex(x => x.key == state.currKey);
+            if (ind < 0) return state;
+            node = state.model.nodeDataArray[ind];
+            if (ev.eType == NodeEventType.Move2Group) {
+                node.group = ev.toNode.key;
+                linkAdd = false;
             }
-        });
-
-        return {
-            ...state,
-            model: {
-                ...state.model,
-                linkDataArray: state.toNodeKey
-                    ? [...state.model.linkDataArray, getLink(state.toNodeKey, state.fromNodeKey, '')]
-                    : [...state.model.linkDataArray]
-            },
-            // fromNode: null,
-            // fromNodeKey: '',
-            toNodeKey: '',
-            toNode: null
-        };
-    } else {
-        var newNode = getOneNode(payload, state.toNode.group);
-        return {
-            ...state,
-            model: {
-                ...state.model,
-                nodeDataArray: [...state.model.nodeDataArray, newNode],
-                linkDataArray: state.toNodeKey
-                    ? [...state.model.linkDataArray, getLink(state.toNodeKey, newNode.key, '')]
-                    : [...state.model.linkDataArray]
-            },
-            fromNode: null,
-            fromNodeKey: '',
-            toNodeKey: '',
-            toNode: null
-        };
+            break;
+        default:
+            return state;
     }
+
+    return {
+        ...state,
+        drager: null,
+        currKey: '',
+        model: {
+            nodeDataArray: nodeAdd ? [...state.model.nodeDataArray, node] : state.model.nodeDataArray,
+            linkDataArray: linkAdd
+                ? [...state.model.linkDataArray, getLink(ev.toNode.key, node.key, ev.toNode.group)]
+                : state.model.linkDataArray
+        }
+    };
+
+    return state;
 };
 
 /**
@@ -258,41 +240,55 @@ const addNodeAfterDropNodeHandler = (state: DiagramState, payload: string): Diag
  * @param state
  * @param payload
  */
-const addNodeAfterDropLinkHandler = (state: DiagramState, payload: string): DiagramState => {
-    if (!state.toLine || !state.fromNodeKey) return state;
+const addNodeAfterDropLinkHandler = (state: DiagramState, ev: NodeEvent): DiagramState => {
+    if (!ev.toLink || !ev.toLink.from) return state;
 
-    const linksToAdd: WFLinkModel[] = [];
-    let linkToRemoveIndex = -1;
-    if (state.toLine.from && state.toLine.to) {
-        linksToAdd.push(getLink(state.toLine.from, state.fromNodeKey, state.toLine.group));
-        linksToAdd.push(getLink(state.fromNodeKey, state.toLine.to, state.toLine.group));
+    let node: WFNodeModel;
+    let nodeAdd: boolean = false;
 
-        linkToRemoveIndex = state.model.linkDataArray.findIndex(
-            link => link.from === state.toLine!.from && link.to === state.toLine!.to
-        );
+    // 1、锁定节点
+    switch (ev.eType) {
+        case NodeEventType.Drag2Link:
+            //1.1 如果是新节点
+            if (!state.drager) return state;
+            node = getOneNode(state.drager.name, ev.toLink.group);
+            nodeAdd = true;
+            break;
+        case NodeEventType.Move2Link:
+            // 1.2 如果是拖动已有节点
+            const ind = state.model.nodeDataArray.findIndex(x => x.key == state.currKey);
+            if (ind < 0) return state;
+            node = state.model.nodeDataArray[ind];
+            break;
+        default:
+            return state;
     }
 
-    /**
-     * 改变节点分组
-     */
-    state.model.nodeDataArray.forEach(x => {
-        if (x.key === state.fromNodeKey) {
-            x.group = state.toLine!.group;
-        }
-    });
+    // 2、被压的线要移除
+    let linkToRemoveIndex = -1;
+    // 3、新增的两条线
+    const linksToAdd: WFLinkModel[] = [];
+
+    linksToAdd.push(getLink(ev.toLink.from, node.key, ev.toLink.group));
+    linksToAdd.push(getLink(node.key, ev.toLink.to, ev.toLink.group));
+    linkToRemoveIndex = state.model.linkDataArray.findIndex(
+        link => link.from === ev.toLink!.from && link.to === ev.toLink!.to
+    );
 
     return {
         ...state,
+        drager: null,
+        currKey: '',
         model: {
-            ...state.model,
-            nodeDataArray: [...state.model.nodeDataArray],
+            nodeDataArray: nodeAdd ? [...state.model.nodeDataArray, node] : state.model.nodeDataArray,
             linkDataArray:
-                linkToRemoveIndex > 0
+                linkToRemoveIndex > -1
                     ? [
                           ...state.model.linkDataArray.slice(0, linkToRemoveIndex),
-                          ...state.model.linkDataArray.slice(linkToRemoveIndex + 1)
-                      ].concat(linksToAdd)
-                    : [...state.model.linkDataArray].concat(linksToAdd)
+                          ...state.model.linkDataArray.slice(linkToRemoveIndex + 1),
+                          ...linksToAdd
+                      ]
+                    : [...state.model.linkDataArray, ...linksToAdd]
         }
     };
 };
@@ -349,12 +345,12 @@ const removeLinkHandler = (state: DiagramState, payload: WFLinkModel): DiagramSt
  * @param payload
  */
 const nodeSelectedHandler = (state: DiagramState, payload: string): DiagramState => {
-    const ind = state.model.nodeDataArray.findIndex(x => x.key == payload);
+    //const ind = state.model.nodeDataArray.findIndex(x => x.key == payload);
 
     return {
         ...state,
-        fromNodeKey: payload,
-        fromNode: state.model.nodeDataArray[ind],
+        currKey: payload,
+        //fromNode: state.model.nodeDataArray[ind],
         selectedNodeKeys: [...state.selectedNodeKeys, payload]
     };
 };
@@ -366,8 +362,8 @@ const nodeDeselectedHandler = (state: DiagramState, payload: string): DiagramSta
     }
     return {
         ...state,
-        fromNodeKey: '',
-        fromNode: null,
+        //fromNodeKey: '',
+        currKey: '',
         selectedNodeKeys: [
             ...state.selectedNodeKeys.slice(0, nodeIndexToRemove),
             ...state.selectedNodeKeys.slice(nodeIndexToRemove + 1)
@@ -381,12 +377,12 @@ const nodeDeselectedHandler = (state: DiagramState, payload: string): DiagramSta
  * @param payload
  */
 const nodeDropedtoHandler = (state: DiagramState, payload: string): DiagramState => {
-    const ind = state.model.nodeDataArray.findIndex(x => x.key == payload);
+    //const ind = state.model.nodeDataArray.findIndex(x => x.key == payload);
 
     return {
-        ...state,
-        toNode: state.model.nodeDataArray[ind],
-        toNodeKey: payload
+        ...state
+        //toNode: state.model.nodeDataArray[ind],
+        //toNodeKey: payload
     };
 };
 
@@ -397,8 +393,8 @@ const nodeDropedtoHandler = (state: DiagramState, payload: string): DiagramState
  */
 const linkDropedHandler = (state: DiagramState, payload: WFLinkModel): DiagramState => {
     return {
-        ...state,
-        toLine: payload
+        ...state
+        //toLine: payload
     };
 };
 
@@ -413,13 +409,17 @@ const getDiagramHandler = (state: DiagramState): DiagramState => {
 };
 
 const dragStartWfNodeHandler = (state: DiagramState, payload: DragNodeEvent): DiagramState => {
-    state.drager = payload.event.target;
-    return state;
+    return {
+        ...state,
+        drager: payload
+    };
 };
 
 const dragEndWfNodeHandler = (state: DiagramState, payload: DragNodeEvent): DiagramState => {
-    state.drager = null;
-    return state;
+    return {
+        ...state,
+        drager: null
+    };
 };
 
 const setNodeHighlightHander = (state: DiagramState, node: any): DiagramState => {
@@ -440,18 +440,19 @@ const setNodeHighlightHander = (state: DiagramState, node: any): DiagramState =>
 
 export const diagramReducer: Reducer<DiagramState> = reducerWithInitialState<DiagramState>({
     drager: null,
-    newNode: null,
+    //newNode: null,
+    currKey: '',
     diagram: new go.Diagram(),
     model: {
         nodeDataArray: [getOneNode('Root')],
         linkDataArray: []
     },
-    selectedNodeKeys: [],
-    fromNode: null,
-    fromNodeKey: '',
-    toNode: null,
-    toNodeKey: '',
-    toLine: null
+    selectedNodeKeys: []
+    // fromNode: null,
+    // fromNodeKey: '',
+    // toNode: null,
+    // toNodeKey: '',
+    // toLine: null
 })
     .case(init, initHandler)
     .case(updateNodeColor, updateNodeColorHandler)
@@ -480,7 +481,5 @@ export const diagramReducer: Reducer<DiagramState> = reducerWithInitialState<Dia
     .build();
 
 export const diagramState = (state: DiagramState) => state;
-export const modelSelector = (state: DiagramState) => {
-    return state.model;
-};
-export const nodeSelectionSelector = (state: DiagramState) => state.selectedNodeKeys;
+export const modelSelector = (state: DiagramState) => state.model;
+// export const nodeSelectionSelector = (state: DiagramState) => state.selectedNodeKeys;

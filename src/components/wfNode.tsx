@@ -166,7 +166,7 @@ const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, dragStartWfNodeHandl
     }
 
     return (
-        <div>
+        <div draggable={true}>
             {!type && (
                 <div className="wfNode wfNodeBtn" onClick={() => initHandler(type)} title={`${title}`}>
                     <img src={require(`../assets/workflow/${src}.png`)} />
@@ -175,17 +175,14 @@ const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, dragStartWfNodeHandl
             {!isBtn && (
                 <div
                     className="wfNode"
-                    draggable={true}
                     data-type={type}
                     onDragStart={(event: any) => {
-                        //if (event.target.className !== 'wfNode') return;
                         event.dataTransfer.setData('text', event.target.textContent);
-                        dragStartWfNodeHandler({ type: type, event: event });
+                        dragStartWfNodeHandler({ type: type, name: title, event: event });
                     }}
                     onDragEnd={(event: any) => {
-                        //if (event.target.className !== 'wfNode') return;
                         event.dataTransfer.setData('text', '');
-                        dragEndWfNodeHandler({ type: type, event: event });
+                        //dragEndWfNodeHandler({ type: type, name:title, event: event });
                     }}
                     title={`${title}`}
                 >

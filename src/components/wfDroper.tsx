@@ -7,7 +7,15 @@ import WFDiagram from './wfDiagram';
 import { Action } from 'typescript-fsa';
 import { Dispatch } from 'redux';
 import go from 'gojs';
-import { linkDropedTo, nodeDropedTo, addNodeByDropLink, addNodeByDropNode, setNodeHighlight } from '../actions/diagram';
+import {
+    NodeEvent,
+    NodeEventType,
+    linkDropedTo,
+    nodeDropedTo,
+    addNodeByDropLink,
+    addNodeByDropNode,
+    setNodeHighlight
+} from '../actions/diagram';
 
 interface WFDroperProps extends WFDroperDispatchProps {
     model: DiagramModel<WFNodeModel, LinkModel>;
@@ -25,11 +33,13 @@ interface WFDroperDispatchProps {
     setNodeHighlightHandler: (node: any) => void;
     linkDropedToHandler: (link: WFLinkModel) => void;
     nodeDropedToHandler: (key: string) => void;
-    addNodeByDropLinkHandler: (name: string) => void;
-    addNodeByDropNodeHandler: (name: string) => void;
+    addNodeByDropLinkHandler: (ev: NodeEvent) => void;
+    addNodeByDropNodeHandler: (ev: NodeEvent) => void;
 }
 
-const mapDispatchToProps = (dispatch: Dispatch<Action<string | null> | Action<WFLinkModel>>): WFDroperDispatchProps => {
+const mapDispatchToProps = (
+    dispatch: Dispatch<Action<string | null> | Action<WFLinkModel> | Action<NodeEvent>>
+): WFDroperDispatchProps => {
     return {
         setNodeHighlightHandler: (node: any) => {
             dispatch(setNodeHighlight(node));
@@ -40,11 +50,11 @@ const mapDispatchToProps = (dispatch: Dispatch<Action<string | null> | Action<WF
         nodeDropedToHandler: (key: string) => {
             dispatch(nodeDropedTo(key));
         },
-        addNodeByDropLinkHandler: (name: string) => {
-            dispatch(addNodeByDropLink(`${name}`));
+        addNodeByDropLinkHandler: (ev: NodeEvent) => {
+            dispatch(addNodeByDropLink(ev));
         },
-        addNodeByDropNodeHandler: (name: string) => {
-            dispatch(addNodeByDropNode(`${name}`));
+        addNodeByDropNodeHandler: (ev: NodeEvent) => {
+            dispatch(addNodeByDropNode(ev));
         }
     };
 };
@@ -71,14 +81,17 @@ const WFDroper: React.FC<WFDroperProps> = ({
             }}
             onDragOver={(event: any) => {
                 event.preventDefault();
+                //debugger
+                if (!state.drager) return;
+
                 event.target.style.backgroundColor = '';
                 const myDiagram = state.diagram;
                 let pixelratio = myDiagram.computePixelRatio();
                 // prevent default action
                 // (open as link for some elements in some browsers)
-                event.preventDefault();
+
                 // Dragging onto a Diagram
-                if (state.drager && event && event.clientX) {
+                if (event && event.clientX) {
                     var can = event.target;
                     // var pixelratio = window.devicePixelRatio;
                     // if the target is not the canvas, we may have trouble, so just quit:
@@ -94,6 +107,7 @@ const WFDroper: React.FC<WFDroperProps> = ({
                     var curnode: any = myDiagram.findPartAt(point, true);
 
                     if (curnode instanceof go.Link) {
+                        console.log('-------------------Link ----------------');
                         setNodeHighlightHandler(curnode);
                     } else if (curnode instanceof go.Group) {
                         setNodeHighlightHandler(curnode);
@@ -106,6 +120,8 @@ const WFDroper: React.FC<WFDroperProps> = ({
             }}
             onDrop={(event: any) => {
                 event.preventDefault();
+                if (!state.drager) return;
+
                 event.target.style.backgroundColor = '';
                 const myDiagram = state.diagram;
                 let pixelratio = myDiagram.computePixelRatio();
@@ -113,7 +129,7 @@ const WFDroper: React.FC<WFDroperProps> = ({
                 // (open as link for some elements in some browsers)
                 event.preventDefault();
                 // Dragging onto a Diagram
-                if (state.drager && event && event.clientX) {
+                if (event && event.clientX) {
                     var can = event.target;
                     // var pixelratio = window.devicePixelRatio;
                     // if the target is not the canvas, we may have trouble, so just quit:
@@ -131,22 +147,21 @@ const WFDroper: React.FC<WFDroperProps> = ({
                     if (curnode instanceof go.Link) {
                         let l = (curnode as any)!.jb;
                         if (l) {
-                            linkDropedToHandler(l as WFLinkModel);
-                            addNodeByDropLinkHandler('new');
+                            // linkDropedToHandler(l as WFLinkModel);
+                            addNodeByDropLinkHandler({ eType: NodeEventType.Drag2Link, toLink: l as WFLinkModel });
                         }
-                        console.log('-------------------Link ----------------');
                     } else if (curnode instanceof go.Group) {
                         let l = (curnode as any)!.jb;
                         if (l) {
-                            nodeDropedToHandler(l.key as string);
-                            addNodeByDropNodeHandler('new');
+                            // nodeDropedToHandler(l.key as string);
+                            addNodeByDropNodeHandler({ eType: NodeEventType.Drag2Group, toNode: l as WFNodeModel });
                         }
                         console.log('-------------------Group ----------------');
                     } else if (curnode instanceof go.Node) {
                         let l = (curnode as any)!.jb;
                         if (l) {
-                            nodeDropedToHandler(l.key as string);
-                            addNodeByDropNodeHandler('new');
+                            // nodeDropedToHandler(l.key as string);
+                            addNodeByDropNodeHandler({ eType: NodeEventType.Drag2Node, toNode: l as WFNodeModel });
                         }
                         console.log('-------------------Group ----------------');
                     } else {
@@ -154,7 +169,6 @@ const WFDroper: React.FC<WFDroperProps> = ({
                 }
             }}
         >
-            <div className="wfTip">sssss</div>
             <WFDiagram model={model} />
         </div>
     );

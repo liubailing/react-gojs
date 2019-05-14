@@ -44,14 +44,14 @@ interface WFDroperDispatchProps {
     linkDropedToHandler: (link: WFLinkModel) => void;
     nodeDropedToHandler: (key: string) => void;
     // tslint:disable-next-line: no-any
-    addNodeByDropLinkHandler: (name: any) => void;
-    addNodeByDropNodeHandler: (name: string) => void;
+    addNodeByDropLinkHandler: (ev: NodeEvent) => void;
+    addNodeByDropNodeHandler: (ev: NodeEvent) => void;
     // tslint:disable-next-line: no-any
     setNodeHighlightHandler: (node: any) => void;
 }
 
 const mapDispatchToProps = (
-    dispatch: Dispatch<Action<string> | Action<Diagram> | Action<WFLinkModel> | Action<NodeEvent>>
+    dispatch: Dispatch<Action<string> | Action<Diagram> | Action<WFLinkModel> | Action<any | null> | Action<NodeEvent>>
 ): WFDroperDispatchProps => {
     return {
         onNodeSelectionHandler: (key: string, isSelected: boolean) => {
@@ -93,11 +93,11 @@ const mapDispatchToProps = (
         nodeDropedToHandler: (key: string) => {
             dispatch(nodeDropedTo(key));
         },
-        addNodeByDropLinkHandler: (name: string) => {
-            dispatch(addNodeByDropLink(`${name}-${++count}`));
+        addNodeByDropLinkHandler: (ev: NodeEvent) => {
+            dispatch(addNodeByDropLink(ev));
         },
-        addNodeByDropNodeHandler: (name: string) => {
-            dispatch(addNodeByDropNode(`${name}-${++count}`));
+        addNodeByDropNodeHandler: (ev: NodeEvent) => {
+            dispatch(addNodeByDropNode(ev));
         },
 
         // tslint:disable-next-line: no-any
@@ -348,22 +348,22 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
             // tslint:disable-next-line: no-any
             let l = (obj as any)!.jb;
             if (l) {
-                this.props.linkDropedToHandler(l as WFLinkModel);
-                this.props.addNodeByDropLinkHandler('new');
+                //this.props.linkDropedToHandler(l as WFLinkModel);
+                this.props.addNodeByDropLinkHandler({ eType: NodeEventType.Move2Link, toLink: l as WFLinkModel });
             }
         } else if (obj instanceof go.Group) {
             // tslint:disable-next-line: no-any
             let l = (obj as any)!.jb;
             if (l) {
                 this.props.nodeDropedToHandler(l.key as string);
-                this.props.addNodeByDropNodeHandler('');
+                this.props.addNodeByDropNodeHandler({ eType: NodeEventType.Move2Group, toNode: l as WFNodeModel });
             }
         } else if (obj instanceof go.Node) {
             // tslint:disable-next-line: no-any
             let l = (obj as any)!.jb;
             if (l) {
                 this.props.nodeDropedToHandler(l.key as string);
-                this.props.addNodeByDropNodeHandler('');
+                this.props.addNodeByDropNodeHandler({ eType: NodeEventType.Move2Node, toNode: l as WFNodeModel });
             }
         }
     }
@@ -379,7 +379,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
         }
         const node = tb.part;
         if (node instanceof go.Node && this.props.onTextChangeHandler) {
-            this.props.onTextChangeHandler({ eType: NodeEventType.rename, key: node.key as string, name: tb.text });
+            this.props.onTextChangeHandler({ eType: NodeEventType.Rename, key: node.key as string, name: tb.text });
         }
     }
 }

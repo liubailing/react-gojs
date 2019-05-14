@@ -94,12 +94,12 @@ const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, dragStartWfNodeHandl
                     data-type={type}
                     onClick={() => initHandler(type)}
                     onDragStart={(event: any) => {
-                        if (event.target.className !== 'wfNode') return;
+                        //if (event.target.className !== 'wfNode') return;
                         event.dataTransfer.setData('text', event.target.textContent);
                         dragStartWfNodeHandler({ type: type, event: event });
                     }}
                     onDragEnd={(event: any) => {
-                        if (event.target.className !== 'wfNode') return;
+                        //if (event.target.className !== 'wfNode') return;
                         event.dataTransfer.setData('text', '');
                         dragEndWfNodeHandler({ type: type, event: event });
                     }}

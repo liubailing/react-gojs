@@ -1,6 +1,6 @@
 import React from 'react';
 import go, { Diagram, ToolManager, GraphObject } from 'gojs';
-import { DiagramState, WFNodeModel, WFLinkModel } from '../reducers/diagramReducer';
+import { DiagramState, WFNodeModel, WFLinkModel, colors } from '../reducers/diagramReducer';
 import './wfDiagram.css';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
@@ -42,8 +42,10 @@ interface WFDroperDispatchProps {
     newNodeHandler: (name: string) => void;
     linkDropedToHandler: (link: WFLinkModel) => void;
     nodeDropedToHandler: (key: string) => void;
+    // tslint:disable-next-line: no-any
     addNodeByDropLinkHandler: (name: any) => void;
     addNodeByDropNodeHandler: (name: string) => void;
+    // tslint:disable-next-line: no-any
     setNodeHighlightHandler: (node: any) => void;
 }
 
@@ -96,6 +98,8 @@ const mapDispatchToProps = (
         addNodeByDropNodeHandler: (name: string) => {
             dispatch(addNodeByDropNode(`${name}-${++count}`));
         },
+
+        // tslint:disable-next-line: no-any
         setNodeHighlightHandler: (node: any) => {
             dispatch(setNodeHighlight(node));
         }
@@ -279,10 +283,10 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
     }
 
     private getHighlightedColor = (h, shape): string => {
-        if (h) return mouseType === 'Hover' ? '#ddd' : 'red';
+        // tslint:disable-next-line: curly
+        if (h) return mouseType === 'Hover' ? (colors.hover_bg as string) : (colors.drag_bg as string);
         var c = shape.part.data.color;
-        return c ? c : 'white';
-        //return  'white';
+        return c ? c : colors.backgroud;
     };
 
     /**
@@ -333,18 +337,21 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
     private mouseDropHandler(e: go.InputEvent, obj: any): void {
         mouseType = '';
         if (obj instanceof go.Link) {
+            // tslint:disable-next-line: no-any
             let l = (obj as any)!.jb;
             if (l) {
                 this.props.linkDropedToHandler(l as WFLinkModel);
                 this.props.addNodeByDropLinkHandler('new');
             }
         } else if (obj instanceof go.Group) {
+            // tslint:disable-next-line: no-any
             let l = (obj as any)!.jb;
             if (l) {
                 this.props.nodeDropedToHandler(l.key as string);
                 this.props.addNodeByDropNodeHandler('');
             }
         } else if (obj instanceof go.Node) {
+            // tslint:disable-next-line: no-any
             let l = (obj as any)!.jb;
             if (l) {
                 this.props.nodeDropedToHandler(l.key as string);

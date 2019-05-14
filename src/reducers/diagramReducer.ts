@@ -47,10 +47,21 @@ export const colors = {
     hover_font: '#ddd'
 };
 
+export enum nodeActType {
+    add = 'add_new',
+    selected = 'select_node',
+    delete = 'delete_node',
+    rename = 'reset_name',
+    move2node = 'move_to_node',
+    move2group = 'move_to_group',
+    move2link = 'move_to_link'
+}
+
 /**
  * store 管理数据
  */
 export interface DiagramState {
+    // tslint:disable-next-line: no-any
     drager: any;
     newNode: WFNodeModel | null;
     diagram: Diagram;
@@ -77,7 +88,6 @@ export interface WFNodeModel extends BaseNodeModel {
     canDroped?: boolean;
 }
 
-//let _drager:any;
 const colorArr = ['lightblue', 'orange', 'lightgreen', 'pink', 'yellow', 'red', 'grey', 'magenta', 'cyan'];
 
 const initHandler = (state: DiagramState, payload: DiagramModel<WFNodeModel, WFLinkModel>): DiagramState => {

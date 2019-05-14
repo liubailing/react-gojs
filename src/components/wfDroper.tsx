@@ -4,7 +4,6 @@ import { DiagramState, modelSelector, WFNodeModel, WFLinkModel } from '../reduce
 import { connect } from 'react-redux';
 import { DiagramModel, LinkModel } from 'react-gojs';
 import WFDiagram from './wfDiagram';
-import { wfNodeType } from './wfNode';
 import { Action } from 'typescript-fsa';
 import { Dispatch } from 'redux';
 import go from 'gojs';
@@ -23,7 +22,6 @@ const mapStateToProps = (state: DiagramState) => {
 };
 
 interface WFDroperDispatchProps {
-    initHandler: (type: wfNodeType) => void;
     setNodeHighlightHandler: (node: any) => void;
     linkDropedToHandler: (link: WFLinkModel) => void;
     nodeDropedToHandler: (key: string) => void;
@@ -33,7 +31,6 @@ interface WFDroperDispatchProps {
 
 const mapDispatchToProps = (dispatch: Dispatch<Action<string | null> | Action<WFLinkModel>>): WFDroperDispatchProps => {
     return {
-        initHandler: (type: wfNodeType) => {},
         setNodeHighlightHandler: (node: any) => {
             dispatch(setNodeHighlight(node));
         },
@@ -55,7 +52,6 @@ const mapDispatchToProps = (dispatch: Dispatch<Action<string | null> | Action<WF
 const WFDroper: React.FC<WFDroperProps> = ({
     model,
     state,
-    initHandler,
     setNodeHighlightHandler,
     linkDropedToHandler,
     nodeDropedToHandler,

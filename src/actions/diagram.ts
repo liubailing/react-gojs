@@ -1,24 +1,43 @@
 import { actionCreatorFactory } from 'typescript-fsa';
-import { WFNodeModel, WFLinkModel } from '../reducers/diagramReducer';
+import { WFNodeModel, WFLinkModel, nodeActType } from '../reducers/diagramReducer';
 import { DiagramModel } from 'react-gojs';
 import { Diagram } from 'gojs';
 import { wfNodeType } from '../components/wfNode';
 
 const actionCreator = actionCreatorFactory('DIAGRAM');
 
+/**
+ *
+ */
 export interface UpdateNodeTextEvent {
     key: string;
     text: string;
 }
 
+/**
+ * 左侧拖拽相关
+ */
 export interface DragNodeEvent {
     type: wfNodeType;
+    // tslint:disable-next-line: no-any
     event: any;
+}
+
+/**
+ * node 操作事件-相关参数
+ */
+export interface NodeEvent {
+    type: nodeActType;
+    name?: string;
+    fromKey?: string;
+    toKey?: string;
+    tolink?: WFLinkModel;
 }
 
 export const init = actionCreator<DiagramModel<WFNodeModel, WFLinkModel>>('INIT');
 export const getDiagram = actionCreator('Get_Diagram');
 export const setDiagram = actionCreator<Diagram>('Set_Diagram');
+// tslint:disable-next-line: no-any
 export const setNodeHighlight = actionCreator<any>('Set_Node_Highlight');
 
 /**

@@ -7,14 +7,76 @@ import { DiagramModel } from 'react-gojs';
 import { init, dragStartWfNode, dragEndWfNode, DragNodeEvent } from '../actions/diagram';
 import './wfNode.css';
 
+const testData = {
+    nodeDataArray: [
+        { key: 'Begin', label: '测试', group: '', isGroup: false, data: {} },
+        { key: 'group0', label: 'group0', color: '#fff', group: '', isGroup: true },
+
+        { key: 'group00', label: 'gr', color: '#fff', group: 'group0', isGroup: true },
+
+        { key: 'g001', label: 'g001', group: 'group00', isGroup: false },
+        { key: 'g0011', label: 'g0011', group: 'group00', isGroup: false },
+
+        { key: 'g1', label: 'g1', group: 'group0', isGroup: false },
+        { key: 'g11', label: 'g11', group: 'group0', isGroup: false },
+        { key: 'g2', label: 'g2', group: 'group0', isGroup: false },
+        { key: 'g22', label: 'g22', group: 'group0', isGroup: false },
+        { key: 'End', label: 'End', group: '', isGroup: false },
+        { key: '孤独', label: '孤独', group: '', isGroup: false }
+    ],
+    linkDataArray: [
+        { from: 'Begin', to: 'group0', group: '' },
+        { from: 'g1', to: 'g11', group: 'group0' },
+        { from: 'g2', to: 'g22', group: 'group0' },
+        { from: 'group0', to: 'End', group: '' }
+    ]
+};
+
 export enum wfNodeType {
-    Btn_Start = '开始',
-    Btn_Reset = '重置',
-    Click = '点击',
-    Condition = '条件',
-    Loop = '循坏',
-    Data = '提取数据',
-    End = '结束'
+    /**
+     * 打开网页
+     */
+    OpenWeb = 'OpenWeb',
+    /**
+     * 点击元素
+     */
+    MouseClick = 'MouseClick',
+    /**
+     * 提取数据
+     */
+    Data = 'Data',
+    /**
+     * 输入文字
+     */
+    Input = 'Input',
+    /**
+     * 识别验证码
+     */
+    Verify = 'Verify',
+    /**
+     * 切换下拉选项
+     */
+    Switch = 'Switch',
+    /**
+     *判断条件
+     */
+    Condition = 'Condition',
+    /**
+     * 循环
+     */
+    Loop = 'Loop',
+    /**
+     * 移动鼠标到元素上
+     */
+    MouseHover = 'MouseHover',
+    /**
+     * 结束循环
+     */
+    LoopBreak = 'Loop',
+    /**
+     * 结束流程
+     */
+    End = 'End'
 }
 
 const mapStateToProps = (state: DiagramState) => {
@@ -38,38 +100,7 @@ const mapDispatchToProps = (
 ): WFNodeDispatchProps => {
     return {
         initHandler: (type: wfNodeType) => {
-            let initNodes = {
-                nodeDataArray: [
-                    { key: 'Begin', label: 'Begin', color: 'lightblue', group: '', isGroup: false },
-                    { key: 'End', label: 'End', color: 'grey', group: '', isGroup: false }
-                ],
-                linkDataArray: [{ from: 'Begin', to: 'End', color: 'pink', group: '' }]
-            };
-
-            if (type === wfNodeType.Btn_Start) {
-                dispatch(init(initNodes));
-            }
-
-            if (type === wfNodeType.Btn_Reset) {
-                initNodes.nodeDataArray = [
-                    { key: 'Begin', label: '测试', color: 'lightblue', group: '', isGroup: false },
-                    { key: 'group0', label: 'group0', color: 'orange', group: '', isGroup: true },
-                    { key: 'g1', label: 'g1', color: 'lightgreen', group: 'group0', isGroup: false },
-                    { key: 'g11', label: 'g11', color: 'pink', group: 'group0', isGroup: false },
-                    { key: 'g2', label: 'g2', color: 'lightgreen', group: 'group0', isGroup: false },
-                    { key: 'g22', label: 'g22', color: 'pink', group: 'group0', isGroup: false },
-                    { key: 'End', label: 'End', color: 'grey', group: '', isGroup: false },
-                    { key: '孤独', label: '孤独', color: 'lightgreen', group: '', isGroup: false }
-                ];
-                initNodes.linkDataArray = [
-                    { from: 'Begin', to: 'group0', color: 'pink', group: '' },
-                    { from: 'g1', to: 'g11', color: 'pink', group: 'group0' },
-                    { from: 'g2', to: 'g22', color: 'pink', group: 'group0' },
-                    // { from: 'Beta', to: 'Delta', color: 'pink' },
-                    { from: 'group0', to: 'End', color: 'pink', group: '' }
-                ];
-                dispatch(init(initNodes));
-            }
+            if (!type) dispatch(init(testData));
         },
         dragStartWfNodeHandler: (event: DragNodeEvent) => dispatch(dragStartWfNode(event)),
         dragEndWfNodeHandler: (event: DragNodeEvent) => {
@@ -79,12 +110,66 @@ const mapDispatchToProps = (
 };
 
 const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, dragStartWfNodeHandler, dragEndWfNodeHandler }) => {
-    let isBtn = [wfNodeType.Btn_Start, wfNodeType.Btn_Reset].includes(type);
+    let isBtn = false;
+    let src = '',
+        title = '';
+    switch (type) {
+        case wfNodeType.Condition:
+            title = '判断条件';
+            src = 'condition';
+            break;
+        case wfNodeType.Data:
+            title = '提取数据';
+            src = 'data';
+            break;
+        case wfNodeType.End:
+            title = '结束流程';
+            src = 'end';
+            break;
+        case wfNodeType.Input:
+            title = '输入文字';
+            src = 'input';
+            break;
+        case wfNodeType.Loop:
+            title = '循环';
+            src = 'loop';
+            break;
+        case wfNodeType.LoopBreak:
+            title = '结束循环';
+            src = 'loopbreak';
+            break;
+        case wfNodeType.MouseClick:
+            title = '点击元素';
+            src = 'mouseclick';
+            break;
+        case wfNodeType.MouseHover:
+            title = '移动鼠标到元素上';
+            src = 'mousehover';
+            break;
+        case wfNodeType.OpenWeb:
+            title = '打开网页';
+            src = 'openweb';
+            break;
+        case wfNodeType.Switch:
+            title = '切换下拉选项';
+            src = 'switch';
+            break;
+        case wfNodeType.Verify:
+            title = '识别验证码';
+            src = 'verify';
+            break;
+        default:
+            title = '模拟数据';
+            src = 'play';
+            isBtn = true;
+            break;
+    }
+
     return (
         <div>
-            {isBtn && (
-                <div className="wfNode wfNodeBtn" onClick={() => initHandler(type)} title={`${type}`}>
-                    {type}
+            {!type && (
+                <div className="wfNode wfNodeBtn" onClick={() => initHandler(type)} title={`${title}`}>
+                    <img src={require(`../assets/workflow/${src}.png`)} />
                 </div>
             )}
             {!isBtn && (
@@ -92,7 +177,6 @@ const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, dragStartWfNodeHandl
                     className="wfNode"
                     draggable={true}
                     data-type={type}
-                    onClick={() => initHandler(type)}
                     onDragStart={(event: any) => {
                         //if (event.target.className !== 'wfNode') return;
                         event.dataTransfer.setData('text', event.target.textContent);
@@ -103,9 +187,9 @@ const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, dragStartWfNodeHandl
                         event.dataTransfer.setData('text', '');
                         dragEndWfNodeHandler({ type: type, event: event });
                     }}
-                    title={`可拖拽 \n\r ${type}`}
+                    title={`${title}`}
                 >
-                    {type}
+                    <img src={require(`../assets/workflow/${src}.png`)} />
                 </div>
             )}
         </div>

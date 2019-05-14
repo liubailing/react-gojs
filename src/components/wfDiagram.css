@@ -3,16 +3,19 @@
     height: 100%;
     width: 100%;
     color: red;
+    position: relative;
 }
 
 .wfDiagram .wfTip {
-    float: left;
+    position: absolute;
+    bottom: 0;
+    left: 0;
     display: inline-block;
-    width: 80px;
-    background: #000;
+    width: 100%;
+    background: #666;
+    opacity: 0.8;
     padding: 5px 0;
-    color: red;
-    z-index: 99999;
+    color: #fff;
 }
 .wfDiagram .divDiagram {
     display: block;

@@ -5,11 +5,12 @@ import './wfDiagram.css';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
 import {
+    NodeEventType,
+    NodeEvent,
     nodeSelected,
     nodeDeselected,
     removeNode,
     removeLink,
-    UpdateNodeTextEvent,
     UpdateNodeText,
     addNode,
     setDiagram,
@@ -36,7 +37,7 @@ const mapStateToProps = (state: DiagramState) => {
 interface WFDroperDispatchProps {
     onNodeSelectionHandler: (key: string, isSelected: boolean) => void;
     onModelChangeHandler: (event: ModelChangeEvent<WFNodeModel, WFLinkModel>) => void;
-    onTextChangeHandler: (event: UpdateNodeTextEvent) => void;
+    onTextChangeHandler: (event: NodeEvent) => void;
     setDiagramHandler: (diagram: Diagram) => void;
     addNodeHandler: (name: string) => void;
     newNodeHandler: (name: string) => void;
@@ -50,7 +51,7 @@ interface WFDroperDispatchProps {
 }
 
 const mapDispatchToProps = (
-    dispatch: Dispatch<Action<string> | Action<Diagram> | Action<WFLinkModel> | Action<UpdateNodeTextEvent>>
+    dispatch: Dispatch<Action<string> | Action<Diagram> | Action<WFLinkModel> | Action<NodeEvent>>
 ): WFDroperDispatchProps => {
     return {
         onNodeSelectionHandler: (key: string, isSelected: boolean) => {
@@ -74,7 +75,7 @@ const mapDispatchToProps = (
                     break;
             }
         },
-        onTextChangeHandler: (event: UpdateNodeTextEvent) => {
+        onTextChangeHandler: (event: NodeEvent) => {
             dispatch(UpdateNodeText(event));
         },
         setDiagramHandler: (diagram: Diagram) => {
@@ -201,16 +202,16 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                     strokeWidth: 2
                 },
                 new go.Binding('stroke', 'color'),
-                new go.Binding('stroke', 'isHighlighted', this.getHighlightedColor).ofObject() // binding source is Node.isHighlighted
+                new go.Binding('stroke', 'isHighlighted', this.getLinkHighlightedColor).ofObject() // binding source is Node.isHighlighted
             ),
             $(
                 go.Shape,
                 {
                     toArrow: 'OpenTriangle',
-                    stroke: 'red'
+                    strokeWidth: 4
                 },
                 new go.Binding('stroke', 'color'),
-                new go.Binding('stroke', 'isHighlighted', this.getHighlightedColor).ofObject() // binding source is Node.isHighlighted
+                new go.Binding('stroke', 'isHighlighted', this.getLinkHighlightedColor).ofObject() // binding source is Node.isHighlighted
             )
         );
 
@@ -243,10 +244,10 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                 go.Shape,
                 'Rectangle',
                 {
-                    stroke: '#ddd',
+                    stroke: colors.group_border,
                     strokeWidth: 1
                 },
-                new go.Binding('stroke', '#fff'),
+                new go.Binding('fill', colors.group_backgroud),
                 new go.Binding('fill', 'isHighlighted', this.getHighlightedColor).ofObject() // binding source is Node.isHighlighted
             ),
             $(
@@ -254,7 +255,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                 'Vertical',
                 {
                     defaultAlignment: go.Spot.Left,
-                    margin: 4
+                    margin: new go.Margin(10, 0, 4, 10)
                 },
                 $(
                     go.Panel,
@@ -268,13 +269,13 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                         go.TextBlock,
                         {
                             font: 'Bold 18px Sans-Serif',
-                            margin: 4
+                            margin: new go.Margin(0, 10, 5, 10)
                         },
                         new go.Binding('text', 'label')
                     )
                 ),
                 // create a placeholder to represent the area where the contents of the group are
-                $(go.Placeholder, { padding: new go.Margin(0, 10) })
+                $(go.Placeholder, { padding: new go.Margin(10, 15) })
             ) // end Vertical Panel
         ); // end Group
 
@@ -287,6 +288,13 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
         if (h) return mouseType === 'Hover' ? (colors.hover_bg as string) : (colors.drag_bg as string);
         var c = shape.part.data.color;
         return c ? c : colors.backgroud;
+    };
+
+    private getLinkHighlightedColor = (h, shape): string => {
+        // tslint:disable-next-line: curly
+        if (h) return mouseType === 'Hover' ? (colors.link_hover_bg as string) : (colors.link_drag_bg as string);
+        var c = shape.part.data.color;
+        return c ? c : colors.link;
     };
 
     /**
@@ -371,7 +379,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
         }
         const node = tb.part;
         if (node instanceof go.Node && this.props.onTextChangeHandler) {
-            this.props.onTextChangeHandler({ key: node.key as string, text: tb.text });
+            this.props.onTextChangeHandler({ eType: NodeEventType.rename, key: node.key as string, name: tb.text });
         }
     }
 }

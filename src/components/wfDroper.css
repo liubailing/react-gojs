@@ -1,17 +1,18 @@
 .wfDiagram {
+    position: relative;
     display: block;
     height: 100%;
     width: 100%;
-    color: red;
 }
 
 .wfDiagram .wfTip {
-    float: left;
+    position: absolute;
+    right: 0;
+    top: -20px;
     display: inline-block;
     width: 100%;
     background: #ddd;
     padding: 5px 0;
-    color: red;
 }
 .wfDiagram .divDiagram {
     display: block;

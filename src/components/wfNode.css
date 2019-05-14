@@ -1,16 +1,20 @@
 .wfNode {
     display: block;
-    width: 60px;
-    height: 30px;
-    border: 1px solid gray;
-    margin: 5px 0 10px 10px;
-    cursor: move;
-    color: #ddd;
-    background-color: cadetblue;
     text-align: center;
-    border: 1px solid #666;
-    border-radius: 5px;
-    font-size: 12px;
+    margin-bottom: 1px;
+    padding: 1px;
+    border: 1px solid #fff;
+}
+.wfContainer .wfNode:hover {
+    border-color: #215ec8;
+    background-color: #5685d6;
+    cursor: move;
+}
+
+.wfContainer .wfNodes img {
+    width: 40px;
+    height: 40px;
+    z-index: 2;
 }
 
 .wfNodeBtn {

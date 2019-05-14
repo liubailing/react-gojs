@@ -1,18 +1,10 @@
 import { actionCreatorFactory } from 'typescript-fsa';
-import { WFNodeModel, WFLinkModel, nodeActType } from '../reducers/diagramReducer';
+import { WFNodeModel, WFLinkModel } from '../reducers/diagramReducer';
 import { DiagramModel } from 'react-gojs';
 import { Diagram } from 'gojs';
 import { wfNodeType } from '../components/wfNode';
 
 const actionCreator = actionCreatorFactory('DIAGRAM');
-
-/**
- *
- */
-export interface UpdateNodeTextEvent {
-    key: string;
-    text: string;
-}
 
 /**
  * 左侧拖拽相关
@@ -24,12 +16,25 @@ export interface DragNodeEvent {
 }
 
 /**
+ * Node 相关操作类型
+ */
+export enum NodeEventType {
+    add = 'add_new',
+    selected = 'select_node',
+    delete = 'delete_node',
+    rename = 'reset_name',
+    move2node = 'move_to_node',
+    move2group = 'move_to_group',
+    move2link = 'move_to_link'
+}
+
+/**
  * node 操作事件-相关参数
  */
 export interface NodeEvent {
-    type: nodeActType;
+    eType: NodeEventType;
     name?: string;
-    fromKey?: string;
+    key?: string;
     toKey?: string;
     tolink?: WFLinkModel;
 }
@@ -53,7 +58,7 @@ export const nodeDeselected = actionCreator<string>('NODE_DESELECTED');
 export const removeNode = actionCreator<string>('REMOVE_NODE');
 export const nodeDropedTo = actionCreator<string>('NODE_DropedTo');
 export const updateNodeColor = actionCreator('UPDATE_NODE_COLOR');
-export const UpdateNodeText = actionCreator<UpdateNodeTextEvent>('UPDATE_NODE_TEXT');
+export const UpdateNodeText = actionCreator<NodeEvent>('UPDATE_NODE_TEXT');
 
 /**
  * 线条相关操作

@@ -24,24 +24,29 @@ class WFContainer extends React.PureComponent<MyDiagramProps> {
         super(props);
     }
 
-    render() {
+    render = () => {
+        let arr: wfNodeType[] = [];
+        for (const key in wfNodeType) {
+            if (wfNodeType.hasOwnProperty(key)) {
+                arr.push(wfNodeType[key] as wfNodeType);
+            }
+        }
+
         return (
             <div className="wfContainer" id="wfContainer">
                 <div className="wfNodes">
-                    <WFNode type={wfNodeType.Btn_Start} />
-                    <WFNode type={wfNodeType.Btn_Reset} />
-                    <WFNode type={wfNodeType.Click} />
-                    <WFNode type={wfNodeType.Data} />
-                    <WFNode type={wfNodeType.Loop} />
-                    <WFNode type={wfNodeType.Condition} />
-                    <WFNode type={wfNodeType.End} />
+                    {arr &&
+                        arr.map(function(e, i) {
+                            return <WFNode key={i} type={e} />;
+                        })}
+                    <WFNode type="" />
                 </div>
                 <div className="wfDiagrams">
                     <WFDroper />
                 </div>
             </div>
         );
-    }
+    };
 
     componentDidMount() {
         this.intAct();

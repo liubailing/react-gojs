@@ -1,6 +1,8 @@
 import { reducerWithInitialState } from 'typescript-fsa-reducers';
 import { Reducer } from 'redux';
 import {
+    NodeEventType,
+    NodeEvent,
     init,
     updateNodeColor,
     addNode,
@@ -12,7 +14,6 @@ import {
     removeNode,
     removeLink,
     UpdateNodeText,
-    UpdateNodeTextEvent,
     getDiagram,
     setDiagram,
     linkDropedTo,
@@ -40,22 +41,16 @@ const randomKey = (len: number = 8): string => {
 export const colors = {
     hover_bg: '#ddd',
     drag_bg: 'red',
-    link: 'green',
-    brder: '#000',
-    backgroud: '#666',
+    border: '#000',
+    backgroud: '#999',
     font: '#000',
-    hover_font: '#ddd'
+    hover_font: '#ddd',
+    group_border: '#000',
+    group_backgroud: '#eee',
+    link_hover_bg: '#ddd',
+    link_drag_bg: 'red',
+    link: 'green'
 };
-
-export enum nodeActType {
-    add = 'add_new',
-    selected = 'select_node',
-    delete = 'delete_node',
-    rename = 'reset_name',
-    move2node = 'move_to_node',
-    move2group = 'move_to_group',
-    move2link = 'move_to_link'
-}
 
 /**
  * store 管理数据
@@ -88,24 +83,16 @@ export interface WFNodeModel extends BaseNodeModel {
     canDroped?: boolean;
 }
 
-const colorArr = ['lightblue', 'orange', 'lightgreen', 'pink', 'yellow', 'red', 'grey', 'magenta', 'cyan'];
+// const colorArr = ['lightblue', 'orange', 'lightgreen', 'pink', 'yellow', 'red', 'grey', 'magenta', 'cyan'];
 
-const initHandler = (state: DiagramState, payload: DiagramModel<WFNodeModel, WFLinkModel>): DiagramState => {
-    return {
-        ...state,
-        model: payload
-    };
-};
-
-const getRandomColor = () => {
-    return colorArr[Math.floor(Math.random() * colorArr.length)];
-};
+// const getRandomColor = () => {
+//     return colorArr[Math.floor(Math.random() * colorArr.length)];
+// };
 
 const getOneNode = (payload: string, group: string = ''): WFNodeModel => {
     return {
         key: randomKey(),
         label: payload,
-        color: getRandomColor(),
         group: group,
         isGroup: false,
         canDroped: false
@@ -117,20 +104,20 @@ const getOneNode = (payload: string, group: string = ''): WFNodeModel => {
 // };
 
 const getLink = (from: string, to: string, group: string): WFLinkModel => {
-    return { from: from, to: to, group: group, color: getRandomColor(), canDroped: true };
+    return { from: from, to: to, group: group, canDroped: true };
 };
 
-// const getNodeHandler = (state: DiagramState, payload: string): DiagramState => {
-//     if (!payload) return state;
-//     state;
-//     return { ...state, newNode: getOneNode(payload) };
-// };
+const initHandler = (state: DiagramState, payload: DiagramModel<WFNodeModel, WFLinkModel>): DiagramState => {
+    return {
+        ...state,
+        model: payload
+    };
+};
 
 const updateNodeColorHandler = (state: DiagramState): DiagramState => {
     const updatedNodes = state.model.nodeDataArray.map(node => {
         return {
-            ...node,
-            color: getRandomColor()
+            ...node
         };
     });
 
@@ -144,11 +131,14 @@ const updateNodeColorHandler = (state: DiagramState): DiagramState => {
 };
 
 /**
- *
+ * 重命名
  * @param state
  * @param payload
  */
-const updateNodeTextHandler = (state: DiagramState, payload: UpdateNodeTextEvent): DiagramState => {
+const updateNodeTextHandler = (state: DiagramState, payload: NodeEvent): DiagramState => {
+    if (payload.eType !== NodeEventType.rename) return state;
+    if (!payload.key || !payload.name) return state;
+
     const nodeIndex = state.model.nodeDataArray.findIndex(node => node.key === payload.key);
 
     return {
@@ -159,7 +149,7 @@ const updateNodeTextHandler = (state: DiagramState, payload: UpdateNodeTextEvent
                 ...state.model.nodeDataArray.slice(0, nodeIndex),
                 {
                     ...state.model.nodeDataArray[nodeIndex],
-                    label: payload.text
+                    label: payload.name
                 },
                 ...state.model.nodeDataArray.slice(nodeIndex + 1)
             ]
@@ -423,13 +413,11 @@ const getDiagramHandler = (state: DiagramState): DiagramState => {
 };
 
 const dragStartWfNodeHandler = (state: DiagramState, payload: DragNodeEvent): DiagramState => {
-    payload.event.target.style.border = '1px solid red';
     state.drager = payload.event.target;
     return state;
 };
 
 const dragEndWfNodeHandler = (state: DiagramState, payload: DragNodeEvent): DiagramState => {
-    payload.event.target.style.border = '';
     state.drager = null;
     return state;
 };

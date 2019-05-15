@@ -43,6 +43,7 @@ export const colors = {
     font: '#000',
     hover_font: '#ddd',
     group_border: '#000',
+    group_header_bg: '#5685d6',
     group_backgroud: '#eee',
     link_hover_bg: '#ddd',
     link_drag_bg: 'red',
@@ -208,10 +209,12 @@ const addNodeAfterDropNodeHandler = (state: DiagramState, ev: NodeEvent): Diagra
                 return state;
             }
             node = state.model.nodeDataArray[ind];
-            // if (ev.eType === NodeEventType.Move2Group) {
-            //     node.group = ev.toNode.key;
-            //     linkAdd = false;
-            // }
+            // 1.3 组内拖动
+            if (ev.eType === NodeEventType.Move2Group && node.group == ev.toNode.key) {
+                return state;
+                // node.group = ev.toNode.key;
+                // linkAdd = false;
+            }
             break;
         default:
             return state;

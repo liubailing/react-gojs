@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { Component } from 'react';
 import go, { Diagram, ToolManager, GraphObject } from 'gojs';
-import { DiagramState, WFNodeModel, WFLinkModel, colors } from '../../reducers/diagramReducer';
+import { DiagramState, WFNodeModel, WFLinkModel, colors, DiagramSetting } from '../../reducers/diagramReducer';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
 import {
@@ -20,15 +20,15 @@ import {
     addNodeByDropNode,
     setNodeHighlight
 } from '../../actions/diagram';
-import { DiagramModel, ModelChangeEvent, GojsDiagram, ModelChangeEventType } from 'react-gojs';
+import { ModelChangeEvent, GojsDiagram, ModelChangeEventType } from 'react-gojs';
 import { Action } from 'typescript-fsa';
 import './wfDiagram.css';
 
-interface MyDiagramProps extends WFDroperDispatchProps {
-    model: DiagramModel<WFNodeModel, WFLinkModel>;
+interface MyDiagramProps extends WFDroperDispatchProps, DiagramState {
+    // model: DiagramModel<WFNodeModel, WFLinkModel>;
 }
 
-const mapStateToProps = (state: DiagramState): DiagramState => {
+const mapStateToProps = (state: DiagramState) => {
     return {
         ...state
     };
@@ -111,12 +111,12 @@ let mouseType = '';
 let count = 0;
 let myDiagram: Diagram;
 
-class MyDiagram extends React.PureComponent<MyDiagramProps> {
+class MyDiagram extends Component<MyDiagramProps> {
     constructor(props: MyDiagramProps) {
         super(props);
+        console.log(props.currKey);
         this.createDiagram = this.createDiagram.bind(this);
         this.onTextEdited = this.onTextEdited.bind(this);
-
         this.mouseEnterHandler = this.mouseEnterHandler.bind(this);
         this.mouseLeaveHandler = this.mouseLeaveHandler.bind(this);
         this.mouseDropHandler = this.mouseDropHandler.bind(this);
@@ -167,6 +167,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                 mouseDrop: this.mouseDropHandler,
                 locationSpot: go.Spot.Center, // the location is the center of the Shape
                 resizeObjectName: 'SHAPE', // user can resize the Shape
+                movable: DiagramSetting.moveNode,
                 selectionChanged: node => {
                     console.log('selectionChanged');
                     this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
@@ -182,7 +183,15 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                 new go.Binding('fill', 'color'),
                 new go.Binding('fill', 'isHighlighted', this.getHighlightedColor).ofObject() // binding source is Node.isHighlighted
             ),
-            $(go.TextBlock, { margin: 8, editable: true }, new go.Binding('text', 'label'))
+            $(
+                go.TextBlock,
+                {
+                    margin: 8,
+                    editable: true,
+                    stroke: colors.font
+                },
+                new go.Binding('text', 'label')
+            )
         );
 
         // This is the template for a label node on a link: just an Ellipse.
@@ -211,9 +220,6 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
         myDiagram.linkTemplate = $(
             go.Link,
             {
-                relinkableFrom: true,
-                relinkableTo: true,
-                toShortLength: 102,
                 mouseEnter: this.mouseEnterHandler,
                 mouseLeave: this.mouseLeaveHandler,
                 mouseDragEnter: this.mouseDragEnterHandler,
@@ -278,6 +284,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                     arrangement: go.TreeLayout.ArrangementHorizontal,
                     isRealtime: false
                 }),
+                movable: DiagramSetting.moveNode,
                 mouseEnter: this.mouseEnterHandler,
                 mouseLeave: this.mouseLeaveHandler,
                 mouseDragEnter: this.mouseDragEnterHandler,
@@ -285,12 +292,9 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                 mouseDrop: this.mouseDropHandler,
                 // the group begins unexpanded;
                 // upon expansion, a Diagram Listener will generate contents for the group
-                isSubGraphExpanded: true
+                isSubGraphExpanded: true,
                 // when a group is expanded, if it contains no parts, generate a subGraph inside of it
-                // subGraphExpandedChanged: function(group) {
-                //     if (group.memberParts.count === 0) {
-                //     }
-                // }
+                subGraphExpandedChanged: function(group) {}
             },
             $(
                 go.Shape,
@@ -313,6 +317,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                     go.Panel,
                     'Horizontal',
                     {
+                        padding: new go.Margin(5, 0, 5, 0),
                         defaultAlignment: go.Spot.Top,
                         background: colors.group_header_bg,
                         stretch: go.GraphObject.Horizontal
@@ -320,8 +325,9 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                     new go.Binding('fill', 'isHighlighted', this.getGroupHighlightedColor).ofObject(), // binding source is Node.isHighlighted
                     // the SubGraphExpanderButton is a panel that functions as a button to expand or collapse the subGraph
                     $('SubGraphExpanderButton', {
+                        padding: new go.Margin(0, 0, 5, 0),
                         alignment: go.Spot.Right,
-                        margin: 5
+                        margin: new go.Margin(0, 0, 0, 5)
                     }),
                     $(
                         go.TextBlock,
@@ -329,6 +335,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                             font: 'Bold 16px Sans-Serif',
                             editable: true,
                             opacity: 0.75,
+                            stroke: colors.font,
                             margin: new go.Margin(0, 10, 5, 10)
                         },
                         new go.Binding('text', 'label').makeTwoWay()
@@ -337,10 +344,45 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                 // create a placeholder to represent the area where the contents of the group are
                 $(go.Placeholder, {
                     padding: new go.Margin(10, 15),
-                    alignment: go.Spot.TopLeft
+                    alignment: go.Spot.TopLeft,
+                    minSize: new go.Size(100, 15)
                 })
             ) // end Vertical Panel
         ); // end Group
+
+        // Using Panel.isClipping
+        // myDiagram.add($(go.Part, "Spot",
+        //     { isClipping: true, scale: 2  },
+        //     $(go.Shape, "Circle", { width: 55, strokeWidth: 0 } ),
+        //         $(go.Picture, "../../assets/workflow/play.png",
+        //             { width: 55, height: 55 }
+        //         )
+        //     )
+        // );
+
+        // manage boss info manually when a node or link is deleted from the diagram
+        myDiagram.addDiagramListener('SelectionDeleting', function(e) {
+            var part = e.subject.first(); // e.subject is the myDiagram.selection collection,
+            // so we'll get the first since we know we only have one selection
+
+            //debugger;
+            myDiagram.startTransaction('clear boss');
+            if (part instanceof go.Node) {
+                // var it = part.findTreeChildrenNodes(); // find all child nodes
+                // while (it.next()) { // now iterate through them and clear out the boss information
+                //     var child = it.value;
+                //     var bossText = child.findObject("boss"); // since the boss TextBlock is named, we can access it by name
+                //     if (bossText === null) return;
+                //     // bossText.text = "";
+                // }
+            } else if (part instanceof go.Link) {
+                // var child = part.toNode;
+                // var bossText = child.findObject("boss"); // since the boss TextBlock is named, we can access it by name
+                // if (bossText === null) return;
+                //bossText.text = "";
+            }
+            myDiagram.commitTransaction('clear boss');
+        });
 
         this.props.setDiagramHandler(myDiagram);
         return myDiagram;
@@ -440,7 +482,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
             // tslint:disable-next-line: no-any
             let l = (obj as any)!.jb;
             if (l) {
-                //t his.props.nodeDropedToHandler(l.key as string);
+                obj.expandSubGraph();
                 this.props.addNodeByDropNodeHandler({ eType: NodeEventType.Move2Group, toNode: l as WFNodeModel });
             }
         } else if (obj instanceof go.Node) {

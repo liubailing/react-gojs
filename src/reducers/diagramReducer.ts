@@ -36,23 +36,27 @@ const randomKey = (len: number = 8): string => {
 };
 
 export const colors = {
-    hover_bg: '#ddd',
+    hover_bg: '#215ec8',
     drag_bg: 'red',
     border: '#000',
-    backgroud: '#999',
-    font: '#000',
+    backgroud: '#5685d6',
+    font: '#fff',
     hover_font: '#ddd',
     group_border: '#000',
     group_header_bg: '#5685d6',
     group_backgroud: '#eee',
-    link_hover_bg: '#ddd',
+    link_hover_bg: '#333',
     link_drag_bg: 'red',
-    linkPlus_hover_bg: '#ddd',
+    linkPlus_hover_bg: 'transparent',
     linkPlus_drag_bg: 'red',
-    link: 'green',
+    link: '#999',
     transparent: 'transparent'
 };
 
+export const DiagramSetting = {
+    moveNode: false,
+    moveGroup: false
+};
 const isGroupArr: WFNodeType[] = [WFNodeType.Condition, WFNodeType.Loop];
 
 /**
@@ -81,17 +85,19 @@ export interface WFNodeModel extends BaseNodeModel {
     canDroped?: boolean;
 }
 
-const getOneNode = (payload: string, group: string = ''): WFNodeModel => {
+const getOneNode = (payload: string, group: string = '', isGroup: boolean = false, color: string = ''): WFNodeModel => {
     return {
         key: randomKey(),
         label: payload,
         group: group,
-        isGroup: false,
-        canDroped: false
+        isGroup: isGroup,
+        canDroped: false,
+        color: color
     };
 };
 
 const getLink = (from: string, to: string, group: string): WFLinkModel => {
+    if (from === to) return { from: '', to: '', group: '' };
     return { from: from, to: to, group: group, canDroped: true };
 };
 
@@ -183,7 +189,8 @@ const addNodeAfterDropNodeHandler = (state: DiagramState, ev: NodeEvent): Diagra
 
     let node: WFNodeModel;
     let nodeAdd: boolean = false;
-    let linkAdd: boolean = true;
+    let lineAdd: boolean = true;
+    let nodes_Con: WFNodeModel[] = [];
 
     // 1、锁定节点
     switch (ev.eType) {
@@ -193,14 +200,24 @@ const addNodeAfterDropNodeHandler = (state: DiagramState, ev: NodeEvent): Diagra
             if (!state.drager) {
                 return state;
             }
+
             node = getOneNode(state.drager.name, ev.toNode.group);
             if (ev.eType === NodeEventType.Drag2Group) {
                 node.group = ev.toNode.key;
-                linkAdd = false;
+                lineAdd = false;
             }
             if (isGroupArr.includes(state.drager.type)) {
                 node.isGroup = true;
                 node.color = colors.group_backgroud;
+
+                if (state.drager.type === WFNodeType.Condition) {
+                    // 1.2 默认生成两个字条件
+                    let n: WFNodeModel;
+                    for (let i = 0; i < 2; i++) {
+                        n = getOneNode(state.drager.name, node.key, true, colors.group_backgroud);
+                        nodes_Con.push(n);
+                    }
+                }
             }
             nodeAdd = true;
             break;
@@ -223,15 +240,38 @@ const addNodeAfterDropNodeHandler = (state: DiagramState, ev: NodeEvent): Diagra
             return state;
     }
 
+    let oldLink: WFLinkModel;
+    let linkToRemoveIndex = state.model.linkDataArray.findIndex(x => x.from === ev.toNode!.key);
+
+    if (linkToRemoveIndex > -1) {
+        oldLink = state.model.linkDataArray[linkToRemoveIndex];
+    }
+
+    // 3、新增的两条线
+    const linksToAdd: WFLinkModel[] = [];
+    if (linkToRemoveIndex > -1) {
+        linksToAdd.push(getLink(oldLink!.from, node.key, oldLink!.group));
+        linksToAdd.push(getLink(node.key, oldLink!.to, oldLink!.group));
+    } else if (lineAdd) {
+        linksToAdd.push(getLink(ev.toNode!.key, node.key, ev.toNode!.group));
+    }
+
     return {
         ...state,
         drager: null,
         currKey: '',
         model: {
-            nodeDataArray: nodeAdd ? [...state.model.nodeDataArray, node] : state.model.nodeDataArray,
-            linkDataArray: linkAdd
-                ? [...state.model.linkDataArray, getLink(ev.toNode.key, node.key, ev.toNode.group)]
-                : state.model.linkDataArray
+            nodeDataArray: nodeAdd
+                ? [...state.model.nodeDataArray, ...nodes_Con, node]
+                : [...state.model.nodeDataArray, ...nodes_Con],
+            linkDataArray:
+                linkToRemoveIndex > -1
+                    ? [
+                          ...state.model.linkDataArray.slice(0, linkToRemoveIndex),
+                          ...state.model.linkDataArray.slice(linkToRemoveIndex + 1),
+                          ...linksToAdd
+                      ]
+                    : [...state.model.linkDataArray, ...linksToAdd]
         }
     };
 
@@ -251,6 +291,8 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, ev: NodeEvent): Diagra
     let node: WFNodeModel;
     let nodeAdd: boolean = false;
 
+    let nodes_Con: WFNodeModel[] = [];
+
     // 1、锁定节点
     switch (ev.eType) {
         case NodeEventType.Drag2Link:
@@ -262,6 +304,15 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, ev: NodeEvent): Diagra
             if (isGroupArr.includes(state.drager.type)) {
                 node.isGroup = true;
                 node.color = colors.group_backgroud;
+                if (state.drager.type === WFNodeType.Condition) {
+                    debugger;
+                    // 1.2 默认生成两个字条件
+                    let n: WFNodeModel;
+                    for (let i = 0; i < 2; i++) {
+                        n = getOneNode(state.drager.name, node.key, true, colors.group_backgroud);
+                        nodes_Con.push(n);
+                    }
+                }
             }
             nodeAdd = true;
             break;
@@ -293,7 +344,9 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, ev: NodeEvent): Diagra
         drager: null,
         currKey: '',
         model: {
-            nodeDataArray: nodeAdd ? [...state.model.nodeDataArray, node] : state.model.nodeDataArray,
+            nodeDataArray: nodeAdd
+                ? [...state.model.nodeDataArray, ...nodes_Con, node]
+                : [...state.model.nodeDataArray, ...nodes_Con],
             linkDataArray:
                 linkToRemoveIndex > -1
                     ? [

@@ -1,0 +1,12 @@
+.edit {
+    margin: 50px;
+}
+
+.edit div {
+    padding: 5px 0;
+}
+.edit label {
+    display: inline-table;
+    width: 100px;
+    text-align: right;
+}

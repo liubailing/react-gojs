@@ -50,6 +50,7 @@ export interface NodeEvent {
     toKey?: string;
     toLink?: WFLinkModel;
     toNode?: WFNodeModel;
+    newNodeToLink?: false;
 }
 
 export const init = actionCreator<DiagramModel<WFNodeModel, WFLinkModel>>('INIT');

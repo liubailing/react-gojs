@@ -1,8 +1,7 @@
 import React from 'react';
 import './wfDiagram.css';
-import { DiagramState, modelSelector, WFNodeModel, WFLinkModel } from '../../reducers/diagramReducer';
+import { DiagramState, WFNodeModel, WFLinkModel } from '../../reducers/diagramReducer';
 import { connect } from 'react-redux';
-import { DiagramModel, LinkModel } from 'react-gojs';
 import WFDiagram from './wfDiagram';
 import { Action } from 'typescript-fsa';
 import { Dispatch } from 'redux';
@@ -10,29 +9,22 @@ import go from 'gojs';
 import {
     NodeEvent,
     NodeEventType,
-    // linkDropedTo,
-    // nodeDropedTo,
     addNodeByDropLink,
     addNodeByDropNode,
     setNodeHighlight
 } from '../../actions/diagram';
 
-interface WFDroperProps extends WFDroperDispatchProps {
-    model: DiagramModel<WFNodeModel, LinkModel>;
-    state: DiagramState;
-}
+interface WFDroperProps extends WFDroperDispatchProps, DiagramState {}
 
 const mapStateToProps = (state: DiagramState) => {
     return {
-        model: modelSelector(state),
-        state: state
+        state: state,
+        ...state
     };
 };
 
 interface WFDroperDispatchProps {
     setNodeHighlightHandler: (node: any) => void;
-    // linkDropedToHandler: (link: WFLinkModel) => void;
-    // nodeDropedToHandler: (key: string) => void;
     addNodeByDropLinkHandler: (ev: NodeEvent) => void;
     addNodeByDropNodeHandler: (ev: NodeEvent) => void;
 }
@@ -44,12 +36,6 @@ const mapDispatchToProps = (
         setNodeHighlightHandler: (node: any) => {
             dispatch(setNodeHighlight(node));
         },
-        // linkDropedToHandler: (link: WFLinkModel) => {
-        //     dispatch(linkDropedTo(link));
-        // },
-        // nodeDropedToHandler: (key: string) => {
-        //     dispatch(nodeDropedTo(key));
-        // },
         addNodeByDropLinkHandler: (ev: NodeEvent) => {
             dispatch(addNodeByDropLink(ev));
         },
@@ -60,11 +46,9 @@ const mapDispatchToProps = (
 };
 
 const WFDroper: React.FC<WFDroperProps> = ({
-    model,
-    state,
+    drager,
+    diagram,
     setNodeHighlightHandler,
-    // linkDropedToHandler,
-    // nodeDropedToHandler,
     addNodeByDropLinkHandler,
     addNodeByDropNodeHandler
 }) => {
@@ -73,7 +57,7 @@ const WFDroper: React.FC<WFDroperProps> = ({
             className="wfDiagram"
             style={{ backgroundColor: '#fff' }}
             onDragEnter={(e: any) => {
-                if (!state.drager) e.preventDefault();
+                if (!drager) e.preventDefault();
                 e.target.style.backgroundColor = '#ddd';
             }}
             onDragLeave={(e: any) => {
@@ -81,10 +65,10 @@ const WFDroper: React.FC<WFDroperProps> = ({
             }}
             onDragOver={(event: any) => {
                 event.preventDefault();
-                if (!state.drager) return;
+                if (!drager) return;
 
                 event.target.style.backgroundColor = '';
-                const myDiagram = state.diagram;
+                const myDiagram = diagram;
                 let pixelratio = myDiagram.computePixelRatio();
                 // prevent default action
                 // (open as link for some elements in some browsers)
@@ -119,10 +103,10 @@ const WFDroper: React.FC<WFDroperProps> = ({
             }}
             onDrop={(event: any) => {
                 event.preventDefault();
-                if (!state.drager) return;
+                if (!drager) return;
 
                 event.target.style.backgroundColor = '';
-                const myDiagram = state.diagram;
+                const myDiagram = diagram;
                 let pixelratio = myDiagram.computePixelRatio();
                 // prevent default action
                 // (open as link for some elements in some browsers)
@@ -146,20 +130,18 @@ const WFDroper: React.FC<WFDroperProps> = ({
                     if (curnode instanceof go.Link) {
                         let l = (curnode as any)!.jb;
                         if (l) {
-                            // linkDropedToHandler(l as WFLinkModel);
                             addNodeByDropLinkHandler({ eType: NodeEventType.Drag2Link, toLink: l as WFLinkModel });
                         }
                     } else if (curnode instanceof go.Group) {
                         let l = (curnode as any)!.jb;
                         if (l) {
-                            // nodeDropedToHandler(l.key as string);
+                            curnode.expandSubGraph();
                             addNodeByDropNodeHandler({ eType: NodeEventType.Drag2Group, toNode: l as WFNodeModel });
                         }
                         console.log('-------------------Group ----------------');
                     } else if (curnode instanceof go.Node) {
                         let l = (curnode as any)!.jb;
                         if (l) {
-                            // nodeDropedToHandler(l.key as string);
                             addNodeByDropNodeHandler({ eType: NodeEventType.Drag2Node, toNode: l as WFNodeModel });
                         }
                         console.log('-------------------Group ----------------');
@@ -168,7 +150,7 @@ const WFDroper: React.FC<WFDroperProps> = ({
                 }
             }}
         >
-            <WFDiagram model={model} />
+            <WFDiagram />
         </div>
     );
 };

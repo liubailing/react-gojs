@@ -2,7 +2,7 @@ import { actionCreatorFactory } from 'typescript-fsa';
 import { WFNodeModel, WFLinkModel } from '../reducers/diagramReducer';
 import { DiagramModel } from 'react-gojs';
 import { Diagram } from 'gojs';
-import { WFNodeType } from '../components/wfNode';
+import { WFNodeType } from '../components/workflow/wfNode';
 
 const actionCreator = actionCreatorFactory('DIAGRAM');
 

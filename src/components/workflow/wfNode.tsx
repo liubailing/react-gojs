@@ -2,9 +2,9 @@ import React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { Action } from 'typescript-fsa';
-import { DiagramState, WFNodeModel, WFLinkModel } from '../reducers/diagramReducer';
+import { DiagramState, WFNodeModel, WFLinkModel } from '../../reducers/diagramReducer';
 import { DiagramModel } from 'react-gojs';
-import { init, dragStartWfNode, DragNodeEvent } from '../actions/diagram';
+import { init, dragStartWfNode, DragNodeEvent } from '../../actions/diagram';
 import './wfNode.css';
 
 const testData = {
@@ -166,7 +166,7 @@ const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, dragStartWfNodeHandl
         <div draggable={true}>
             {!type && (
                 <div className="wfNode wfNodeBtn" onClick={() => initHandler(type)} title={`${title}`}>
-                    <img src={require(`../assets/workflow/${src}.png`)} />
+                    <img src={require(`../../assets/workflow/${src}.png`)} />
                 </div>
             )}
             {!isBtn && (
@@ -183,7 +183,7 @@ const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, dragStartWfNodeHandl
                     }}
                     title={`${title}`}
                 >
-                    <img src={require(`../assets/workflow/${src}.png`)} />
+                    <img src={require(`../../assets/workflow/${src}.png`)} />
                 </div>
             )}
         </div>

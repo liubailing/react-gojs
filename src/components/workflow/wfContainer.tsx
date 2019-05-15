@@ -2,7 +2,7 @@ import React from 'react';
 import WFDroper from './wfDroper';
 import WFNode, { WFNodeType } from './wfNode';
 import './wfContainer.css';
-import { DiagramState } from '../reducers/diagramReducer';
+import { DiagramState } from '../../reducers/diagramReducer';
 import { connect } from 'react-redux';
 
 interface MyDiagramProps extends WFDroperDispatchProps {}

@@ -22,7 +22,7 @@ import {
 } from '../actions/diagram';
 import go, { Diagram } from 'gojs';
 import { BaseNodeModel, DiagramModel, LinkModel } from 'react-gojs';
-import { WFNodeType } from '../components/wfNode';
+import { WFNodeType } from '../components/workflow/wfNode';
 
 const randomKey = (len: number = 8): string => {
     len = len < 1 ? 8 : len;

@@ -1,6 +1,6 @@
 import React from 'react';
 import go, { Diagram, ToolManager, GraphObject } from 'gojs';
-import { DiagramState, WFNodeModel, WFLinkModel, colors } from '../reducers/diagramReducer';
+import { DiagramState, WFNodeModel, WFLinkModel, colors } from '../../reducers/diagramReducer';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
 import {
@@ -19,7 +19,7 @@ import {
     addNodeByDropLink,
     addNodeByDropNode,
     setNodeHighlight
-} from '../actions/diagram';
+} from '../../actions/diagram';
 import { DiagramModel, ModelChangeEvent, GojsDiagram, ModelChangeEventType } from 'react-gojs';
 import { Action } from 'typescript-fsa';
 import './wfDiagram.css';
@@ -28,7 +28,7 @@ interface MyDiagramProps extends WFDroperDispatchProps {
     model: DiagramModel<WFNodeModel, WFLinkModel>;
 }
 
-const mapStateToProps = (state: DiagramState) => {
+const mapStateToProps = (state: DiagramState): DiagramState => {
     return {
         ...state
     };
@@ -258,8 +258,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                 {
                     width: 15,
                     height: 15,
-                    strokeWidth: 6,
-                    cursor: 'pointer'
+                    strokeWidth: 6
                 },
                 new go.Binding('fill', 'color'),
                 new go.Binding('fill', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject(), // binding source is Node.isHighlighted

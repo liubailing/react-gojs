@@ -1,6 +1,6 @@
 import React from 'react';
 import './wfDiagram.css';
-import { DiagramState, modelSelector, WFNodeModel, WFLinkModel } from '../reducers/diagramReducer';
+import { DiagramState, modelSelector, WFNodeModel, WFLinkModel } from '../../reducers/diagramReducer';
 import { connect } from 'react-redux';
 import { DiagramModel, LinkModel } from 'react-gojs';
 import WFDiagram from './wfDiagram';
@@ -15,7 +15,7 @@ import {
     addNodeByDropLink,
     addNodeByDropNode,
     setNodeHighlight
-} from '../actions/diagram';
+} from '../../actions/diagram';
 
 interface WFDroperProps extends WFDroperDispatchProps {
     model: DiagramModel<WFNodeModel, LinkModel>;

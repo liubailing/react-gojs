@@ -1,6 +1,6 @@
 import React from 'react';
 import WFDroper from './wfDroper';
-import WFNode, { wfNodeType } from './wfNode';
+import WFNode, { WFNodeType } from './wfNode';
 import './wfContainer.css';
 import { DiagramState } from '../reducers/diagramReducer';
 import { connect } from 'react-redux';
@@ -25,10 +25,10 @@ class WFContainer extends React.PureComponent<MyDiagramProps> {
     }
 
     render = () => {
-        let arr: wfNodeType[] = [];
-        for (const key in wfNodeType) {
-            if (wfNodeType.hasOwnProperty(key)) {
-                arr.push(wfNodeType[key] as wfNodeType);
+        let arr: WFNodeType[] = [];
+        for (const key in WFNodeType) {
+            if (WFNodeType.hasOwnProperty(key)) {
+                arr.push(WFNodeType[key] as WFNodeType);
             }
         }
 

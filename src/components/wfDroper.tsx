@@ -10,8 +10,8 @@ import go from 'gojs';
 import {
     NodeEvent,
     NodeEventType,
-    linkDropedTo,
-    nodeDropedTo,
+    // linkDropedTo,
+    // nodeDropedTo,
     addNodeByDropLink,
     addNodeByDropNode,
     setNodeHighlight
@@ -31,8 +31,8 @@ const mapStateToProps = (state: DiagramState) => {
 
 interface WFDroperDispatchProps {
     setNodeHighlightHandler: (node: any) => void;
-    linkDropedToHandler: (link: WFLinkModel) => void;
-    nodeDropedToHandler: (key: string) => void;
+    // linkDropedToHandler: (link: WFLinkModel) => void;
+    // nodeDropedToHandler: (key: string) => void;
     addNodeByDropLinkHandler: (ev: NodeEvent) => void;
     addNodeByDropNodeHandler: (ev: NodeEvent) => void;
 }
@@ -44,12 +44,12 @@ const mapDispatchToProps = (
         setNodeHighlightHandler: (node: any) => {
             dispatch(setNodeHighlight(node));
         },
-        linkDropedToHandler: (link: WFLinkModel) => {
-            dispatch(linkDropedTo(link));
-        },
-        nodeDropedToHandler: (key: string) => {
-            dispatch(nodeDropedTo(key));
-        },
+        // linkDropedToHandler: (link: WFLinkModel) => {
+        //     dispatch(linkDropedTo(link));
+        // },
+        // nodeDropedToHandler: (key: string) => {
+        //     dispatch(nodeDropedTo(key));
+        // },
         addNodeByDropLinkHandler: (ev: NodeEvent) => {
             dispatch(addNodeByDropLink(ev));
         },
@@ -63,8 +63,8 @@ const WFDroper: React.FC<WFDroperProps> = ({
     model,
     state,
     setNodeHighlightHandler,
-    linkDropedToHandler,
-    nodeDropedToHandler,
+    // linkDropedToHandler,
+    // nodeDropedToHandler,
     addNodeByDropLinkHandler,
     addNodeByDropNodeHandler
 }) => {
@@ -81,7 +81,6 @@ const WFDroper: React.FC<WFDroperProps> = ({
             }}
             onDragOver={(event: any) => {
                 event.preventDefault();
-                //debugger
                 if (!state.drager) return;
 
                 event.target.style.backgroundColor = '';

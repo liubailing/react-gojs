@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import { Action } from 'typescript-fsa';
 import { DiagramState, WFNodeModel, WFLinkModel } from '../reducers/diagramReducer';
 import { DiagramModel } from 'react-gojs';
-import { init, dragStartWfNode, dragEndWfNode, DragNodeEvent } from '../actions/diagram';
+import { init, dragStartWfNode, DragNodeEvent } from '../actions/diagram';
 import './wfNode.css';
 
 const testData = {
@@ -32,7 +32,7 @@ const testData = {
     ]
 };
 
-export enum wfNodeType {
+export enum WFNodeType {
     /**
      * 打开网页
      */
@@ -58,7 +58,7 @@ export enum wfNodeType {
      */
     Switch = 'Switch',
     /**
-     *判断条件
+     * 判断条件
      */
     Condition = 'Condition',
     /**
@@ -86,75 +86,72 @@ const mapStateToProps = (state: DiagramState) => {
 };
 
 interface WFNodeDispatchProps {
-    initHandler: (type: wfNodeType) => void;
+    initHandler: (type: WFNodeType) => void;
     dragStartWfNodeHandler: (event: DragNodeEvent) => void;
-    dragEndWfNodeHandler: (event: DragNodeEvent) => void;
 }
 
 interface WFNodeProps extends WFNodeDispatchProps {
-    type: wfNodeType;
+    type: WFNodeType;
 }
 
 const mapDispatchToProps = (
     dispatch: Dispatch<Action<DiagramModel<WFNodeModel, WFLinkModel>> | Action<DragNodeEvent>>
 ): WFNodeDispatchProps => {
     return {
-        initHandler: (type: wfNodeType) => {
+        initHandler: (type: WFNodeType) => {
+            // tslint:disable-next-line: curly
             if (!type) dispatch(init(testData));
         },
-        dragStartWfNodeHandler: (event: DragNodeEvent) => dispatch(dragStartWfNode(event)),
-        dragEndWfNodeHandler: (event: DragNodeEvent) => {
-            dispatch(dragEndWfNode(event));
-        }
+        dragStartWfNodeHandler: (event: DragNodeEvent) => dispatch(dragStartWfNode(event))
     };
 };
 
-const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, dragStartWfNodeHandler, dragEndWfNodeHandler }) => {
+const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, dragStartWfNodeHandler }) => {
     let isBtn = false;
     let src = '',
         title = '';
     switch (type) {
-        case wfNodeType.Condition:
+        case WFNodeType.Condition:
             title = '判断条件';
             src = 'condition';
             break;
-        case wfNodeType.Data:
+        case WFNodeType.Data:
             title = '提取数据';
             src = 'data';
             break;
-        case wfNodeType.End:
+        case WFNodeType.End:
             title = '结束流程';
             src = 'end';
             break;
-        case wfNodeType.Input:
+        case WFNodeType.Input:
             title = '输入文字';
             src = 'input';
             break;
-        case wfNodeType.Loop:
+        case WFNodeType.Loop:
             title = '循环';
             src = 'loop';
             break;
-        case wfNodeType.LoopBreak:
+        case WFNodeType.LoopBreak:
             title = '结束循环';
             src = 'loopbreak';
             break;
-        case wfNodeType.MouseClick:
+        case WFNodeType.MouseClick:
             title = '点击元素';
             src = 'mouseclick';
             break;
-        case wfNodeType.MouseHover:
+        case WFNodeType.MouseHover:
             title = '移动鼠标到元素上';
             src = 'mousehover';
             break;
-        case wfNodeType.OpenWeb:
+        case WFNodeType.OpenWeb:
             title = '打开网页';
             src = 'openweb';
             break;
-        case wfNodeType.Switch:
+        case WFNodeType.Switch:
             title = '切换下拉选项';
             src = 'switch';
             break;
-        case wfNodeType.Verify:
+        case WFNodeType.Verify:
             title = '识别验证码';
             src = 'verify';
             break;

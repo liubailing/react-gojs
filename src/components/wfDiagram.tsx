@@ -15,8 +15,8 @@ import {
     addNode,
     setDiagram,
     newNode,
-    linkDropedTo,
-    nodeDropedTo,
+    // linkDropedTo,
+    // nodeDropedTo,
     addNodeByDropLink,
     addNodeByDropNode,
     setNodeHighlight
@@ -41,8 +41,8 @@ interface WFDroperDispatchProps {
     setDiagramHandler: (diagram: Diagram) => void;
     addNodeHandler: (name: string) => void;
     newNodeHandler: (name: string) => void;
-    linkDropedToHandler: (link: WFLinkModel) => void;
-    nodeDropedToHandler: (key: string) => void;
+    // linkDropedToHandler: (link: WFLinkModel) => void;
+    // nodeDropedToHandler: (key: string) => void;
     // tslint:disable-next-line: no-any
     addNodeByDropLinkHandler: (ev: NodeEvent) => void;
     addNodeByDropNodeHandler: (ev: NodeEvent) => void;
@@ -87,12 +87,12 @@ const mapDispatchToProps = (
         newNodeHandler: (name: string) => {
             dispatch(newNode(`${name}-${++count}`));
         },
-        linkDropedToHandler: (link: WFLinkModel) => {
-            dispatch(linkDropedTo(link));
-        },
-        nodeDropedToHandler: (key: string) => {
-            dispatch(nodeDropedTo(key));
-        },
+        // linkDropedToHandler: (link: WFLinkModel) => {
+        //     dispatch(linkDropedTo(link));
+        // },
+        // nodeDropedToHandler: (key: string) => {
+        //     dispatch(nodeDropedTo(key));
+        // },
         addNodeByDropLinkHandler: (ev: NodeEvent) => {
             dispatch(addNodeByDropLink(ev));
         },
@@ -268,7 +268,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                     $(
                         go.TextBlock,
                         {
-                            font: 'Bold 18px Sans-Serif',
+                            font: 'Bold 16px Sans-Serif',
                             margin: new go.Margin(0, 10, 5, 10)
                         },
                         new go.Binding('text', 'label')
@@ -348,21 +348,21 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
             // tslint:disable-next-line: no-any
             let l = (obj as any)!.jb;
             if (l) {
-                //this.props.linkDropedToHandler(l as WFLinkModel);
+                // this.props.linkDropedToHandler(l as WFLinkModel);
                 this.props.addNodeByDropLinkHandler({ eType: NodeEventType.Move2Link, toLink: l as WFLinkModel });
             }
         } else if (obj instanceof go.Group) {
             // tslint:disable-next-line: no-any
             let l = (obj as any)!.jb;
             if (l) {
-                this.props.nodeDropedToHandler(l.key as string);
+                //t his.props.nodeDropedToHandler(l.key as string);
                 this.props.addNodeByDropNodeHandler({ eType: NodeEventType.Move2Group, toNode: l as WFNodeModel });
             }
         } else if (obj instanceof go.Node) {
             // tslint:disable-next-line: no-any
             let l = (obj as any)!.jb;
             if (l) {
-                this.props.nodeDropedToHandler(l.key as string);
+                // this.props.nodeDropedToHandler(l.key as string);
                 this.props.addNodeByDropNodeHandler({ eType: NodeEventType.Move2Node, toNode: l as WFNodeModel });
             }
         }

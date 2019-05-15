@@ -1,7 +1,6 @@
 import React from 'react';
 import go, { Diagram, ToolManager, GraphObject } from 'gojs';
 import { DiagramState, WFNodeModel, WFLinkModel, colors } from '../reducers/diagramReducer';
-import './wfDiagram.css';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
 import {
@@ -23,6 +22,7 @@ import {
 } from '../actions/diagram';
 import { DiagramModel, ModelChangeEvent, GojsDiagram, ModelChangeEventType } from 'react-gojs';
 import { Action } from 'typescript-fsa';
+import './wfDiagram.css';
 
 interface MyDiagramProps extends WFDroperDispatchProps {
     model: DiagramModel<WFNodeModel, WFLinkModel>;
@@ -142,6 +142,7 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
             'undoManager.isEnabled': true,
             contentAlignment: go.Spot.TopCenter,
             initialContentAlignment: go.Spot.LeftCenter,
+
             layout: $(go.TreeLayout, {
                 angle: 90,
                 arrangement: go.TreeLayout.ArrangementVertical,
@@ -184,9 +185,35 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
             $(go.TextBlock, { margin: 8, editable: true }, new go.Binding('text', 'label'))
         );
 
+        // This is the template for a label node on a link: just an Ellipse.
+        // This node supports user-drawn links to and from the label node.
+        myDiagram.nodeTemplateMap.add(
+            'LinkLabel',
+            $(
+                'Node',
+                {
+                    selectable: true,
+                    avoidable: false,
+                    layerName: 'Foreground'
+                }, // always have link label nodes in front of Links
+                $('Shape', 'Ellipse', {
+                    width: 5,
+                    height: 5,
+                    stroke: null,
+                    portId: '',
+                    fromLinkable: true,
+                    toLinkable: true,
+                    cursor: 'pointer'
+                })
+            )
+        );
+
         myDiagram.linkTemplate = $(
             go.Link,
             {
+                relinkableFrom: true,
+                relinkableTo: true,
+                toShortLength: 102,
                 mouseEnter: this.mouseEnterHandler,
                 mouseLeave: this.mouseLeaveHandler,
                 mouseDragEnter: this.mouseDragEnterHandler,
@@ -212,6 +239,32 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                 },
                 new go.Binding('stroke', 'color'),
                 new go.Binding('stroke', 'isHighlighted', this.getLinkHighlightedColor).ofObject() // binding source is Node.isHighlighted
+            ),
+            $(
+                go.Shape,
+                'Rectangle',
+                {
+                    width: 80,
+                    height: 80,
+                    opacity: 0
+                },
+                new go.Binding('fill', 'color'),
+                new go.Binding('fill', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject(), // binding source is Node.isHighlighted
+                new go.Binding('stroke', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject() // binding source is Node.isHighlighted
+            ),
+            $(
+                go.Shape,
+                'PlusLine',
+                {
+                    width: 15,
+                    height: 15,
+                    strokeWidth: 6,
+                    cursor: 'pointer'
+                },
+                new go.Binding('fill', 'color'),
+                new go.Binding('fill', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject(), // binding source is Node.isHighlighted
+                new go.Binding('stroke', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject(), // binding source is Node.isHighlighted
+                new go.Binding('opacity', 'isHighlighted', this.getLinkPlusLineHighlightedopacity).ofObject() // binding source is Node.isHighlighted
             )
         );
 
@@ -254,28 +307,39 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
                 go.Panel,
                 'Vertical',
                 {
-                    defaultAlignment: go.Spot.Left,
-                    margin: new go.Margin(10, 0, 4, 10)
+                    stretch: go.GraphObject.Horizontal,
+                    defaultAlignment: go.Spot.Left
                 },
                 $(
                     go.Panel,
                     'Horizontal',
                     {
-                        defaultAlignment: go.Spot.Top
+                        defaultAlignment: go.Spot.Top,
+                        background: colors.group_header_bg,
+                        stretch: go.GraphObject.Horizontal
                     },
+                    new go.Binding('fill', 'isHighlighted', this.getGroupHighlightedColor).ofObject(), // binding source is Node.isHighlighted
                     // the SubGraphExpanderButton is a panel that functions as a button to expand or collapse the subGraph
-                    $('SubGraphExpanderButton'),
+                    $('SubGraphExpanderButton', {
+                        alignment: go.Spot.Right,
+                        margin: 5
+                    }),
                     $(
                         go.TextBlock,
                         {
                             font: 'Bold 16px Sans-Serif',
+                            editable: true,
+                            opacity: 0.75,
                             margin: new go.Margin(0, 10, 5, 10)
                         },
-                        new go.Binding('text', 'label')
+                        new go.Binding('text', 'label').makeTwoWay()
                     )
                 ),
                 // create a placeholder to represent the area where the contents of the group are
-                $(go.Placeholder, { padding: new go.Margin(10, 15) })
+                $(go.Placeholder, {
+                    padding: new go.Margin(10, 15),
+                    alignment: go.Spot.TopLeft
+                })
             ) // end Vertical Panel
         ); // end Group
 
@@ -295,6 +359,28 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
         if (h) return mouseType === 'Hover' ? (colors.link_hover_bg as string) : (colors.link_drag_bg as string);
         var c = shape.part.data.color;
         return c ? c : colors.link;
+    };
+
+    private getGroupHighlightedColor = (h, shape): string => {
+        // tslint:disable-next-line: curly
+        if (h) return mouseType === 'Hover' ? (colors.link_hover_bg as string) : (colors.link_drag_bg as string);
+        var c = shape.part.data.color;
+        return c ? c : colors.link;
+    };
+
+    private getLinkPlusLineHighlightedColor = (h, shape): string => {
+        // tslint:disable-next-line: curly
+        if (h)
+            return mouseType === 'Hover' ? (colors.linkPlus_hover_bg as string) : (colors.linkPlus_drag_bg as string);
+        var c = shape.part.data.color;
+        return c ? c : colors.link;
+    };
+
+    private getLinkPlusLineHighlightedopacity = (h, shape): number => {
+        // tslint:disable-next-line: curly
+        if (h) return mouseType === 'Hover' ? 1 : 0.6;
+
+        return 0;
     };
 
     /**
@@ -382,6 +468,12 @@ class MyDiagram extends React.PureComponent<MyDiagramProps> {
             this.props.onTextChangeHandler({ eType: NodeEventType.Rename, key: node.key as string, name: tb.text });
         }
     }
+
+    // private setOpcity():number{
+    //    var a = this.props.getMode();
+    //    debugger;
+    //    return a.name?1:0;
+    // }
 }
 
 export default connect(

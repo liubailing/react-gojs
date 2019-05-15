@@ -25,7 +25,7 @@ const testData = {
         { key: '孤独', label: '孤独', group: '', isGroup: false }
     ],
     linkDataArray: [
-        { from: 'Begin', to: 'group0', group: '' },
+        { from: 'Begin', to: 'group0', group: '', category: 'LinkLabel' },
         { from: 'g1', to: 'g11', group: 'group0' },
         { from: 'g2', to: 'g22', group: 'group0' },
         { from: 'group0', to: 'End', group: '' }

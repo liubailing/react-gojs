@@ -47,7 +47,10 @@ export const colors = {
     group_backgroud: '#eee',
     link_hover_bg: '#ddd',
     link_drag_bg: 'red',
-    link: 'green'
+    linkPlus_hover_bg: '#ddd',
+    linkPlus_drag_bg: 'red',
+    link: 'green',
+    transparent: 'transparent'
 };
 
 const isGroupArr: WFNodeType[] = [WFNodeType.Condition, WFNodeType.Loop];

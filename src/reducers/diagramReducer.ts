@@ -37,8 +37,6 @@ const randomKey = (len: number = 8): string => {
     return pwd;
 };
 
-let count = 1;
-
 export const colors = {
     start: '#69BE70',
     end: '#E06969',
@@ -58,12 +56,14 @@ export const colors = {
     linkPlus_hover_bg: 'transparent',
     linkPlus_drag_bg: '#215ec8',
     link: '#9EA3AF',
+    icon_bg: '#fff',
     transparent: 'transparent'
 };
 
 export const DiagramSetting = {
     moveNode: false,
-    moveGroup: false
+    moveGroup: false,
+    padding: 2
 };
 const isGroupArr: WFNodeType[] = [WFNodeType.Condition, WFNodeType.Loop];
 
@@ -85,6 +85,7 @@ export interface WFLinkModel extends LinkModel {
     group: string;
     canDroped?: boolean;
     color?: string;
+    category?: string;
 }
 
 export interface WFNodeModel extends BaseNodeModel {
@@ -223,9 +224,9 @@ const addNodeBySelfHandler = (state: DiagramState, ev: NodeEvent): DiagramState 
     let ind = -1;
     let oldline: WFLinkModel;
     let link_Add: WFLinkModel[] = [];
-    let node = getOneNode(`${ev.toNode.label}-${++count}`, ev.toNode.group, false, '', true);
+    let node = getOneNode(`${ev.toNode.label}`, ev.toNode.group, false, '', true);
     if (ev.eType === NodeEventType.AddPrvNode) {
-        ind = state.model.linkDataArray.findIndex(x => x.to == ev.toNode!.key);
+        ind = state.model.linkDataArray.findIndex(x => x.to === ev.toNode!.key);
         if (ind < 0) {
             link_Add.push(getLink(node.key, ev.toNode!.key, ev.toNode!.group));
         } else {
@@ -233,7 +234,7 @@ const addNodeBySelfHandler = (state: DiagramState, ev: NodeEvent): DiagramState 
             // link_Add = [getLink(oldline.from,node.key,ev.toNode!.group),getLink(node.key,oldline.to,ev.toNode!.group)]
         }
     } else {
-        ind = state.model.linkDataArray.findIndex(x => x.from == ev.toNode!.key);
+        ind = state.model.linkDataArray.findIndex(x => x.from === ev.toNode!.key);
         if (ind < 0) {
             link_Add.push(getLink(ev.toNode!.key, node.key, ev.toNode!.group));
         } else {
@@ -259,6 +260,9 @@ const addNodeBySelfHandler = (state: DiagramState, ev: NodeEvent): DiagramState 
     // if (ev.eType === NodeEventType.AddNextNode) {
     //     state.model.nodeDataArray.splice(ind + 1, 0, node)
     // }
+    link_Add.map(x => {
+        x.category = 'CondtionLink';
+    });
 
     return {
         ...state,
@@ -316,10 +320,13 @@ const addNodeAfterDropNodeHandler = (state: DiagramState, ev: NodeEvent): Diagra
                     // 1.2 默认生成两个字条件
                     let n: WFNodeModel;
                     for (let i = 0; i < 2; i++) {
-                        n = getOneNode(state.drager.name + i, node.key, false, colors.group_backgroud, true);
+                        n = getOneNode(state.drager.name, node.key, false, colors.group_backgroud, true);
                         nodes_Con.push(n);
                     }
-                    links_Con.push(getLink(nodes_Con[0].key, nodes_Con[1].key, nodes_Con[1].group));
+                    links_Con.push({
+                        ...getLink(nodes_Con[0].key, nodes_Con[1].key, nodes_Con[1].group),
+                        ...{ category: 'CondtionLink' }
+                    });
                 }
             }
             nodeAdd = true;
@@ -417,10 +424,13 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, ev: NodeEvent): Diagra
                     // 1.2 默认生成两个字条件
                     let n: WFNodeModel;
                     for (let i = 0; i < 2; i++) {
-                        n = getOneNode(state.drager.name + i, node.key, false, colors.group_backgroud, true);
+                        n = getOneNode(state.drager.name, node.key, false, colors.group_backgroud, true);
                         nodes_Con.push(n);
                     }
-                    links_Con.push(getLink(nodes_Con[0].key, nodes_Con[1].key, nodes_Con[1].group));
+                    links_Con.push({
+                        ...getLink(nodes_Con[0].key, nodes_Con[1].key, nodes_Con[1].group),
+                        ...{ category: 'CondtionLink' }
+                    });
                 }
             }
             nodeAdd = true;

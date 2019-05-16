@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import go, { Diagram, ToolManager, GraphObject } from 'gojs';
+import go, { Diagram, ToolManager, GraphObject, Margin } from 'gojs';
 import { DiagramState, WFNodeModel, WFLinkModel, colors, DiagramSetting } from '../../reducers/diagramReducer';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
@@ -171,19 +171,20 @@ class MyDiagram extends Component<MyDiagramProps> {
                 locationSpot: go.Spot.Center, // the location is the center of the Shape
                 resizeObjectName: 'SHAPE', // user can resize the Shape
                 movable: DiagramSetting.moveNode,
-                selectionChanged: node => {
-                    console.log('selectionChanged');
-                    this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
-                },
-                padding: new go.Margin(2, 0, 2, 0),
-                minSize: new go.Size(180, 20)
+                // selectionChanged: node => {
+                //     console.log('selectionChanged');
+                //     this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
+                // },
+                padding: new go.Margin(DiagramSetting.padding, 0, DiagramSetting.padding, 0),
+                minSize: new go.Size(160, 25)
             },
             new go.Binding('location'),
             $(
                 go.Shape,
                 'RoundedRectangle',
                 {
-                    strokeWidth: 0
+                    strokeWidth: 0,
+                    stroke: colors.transparent
                 },
                 new go.Binding('fill', 'color'),
                 new go.Binding('fill', 'isHighlighted', this.getHighlightedColor).ofObject() // binding source is Node.isHighlighted
@@ -191,7 +192,6 @@ class MyDiagram extends Component<MyDiagramProps> {
             $(
                 go.TextBlock,
                 {
-                    margin: 8,
                     editable: true,
                     stroke: colors.font,
                     font: '16px Sans-Serif'
@@ -233,23 +233,24 @@ class MyDiagram extends Component<MyDiagramProps> {
                 mouseDrop: this.mouseDropHandler,
                 movable: false,
                 deletable: false,
-                routing: go.Link.Orthogonal,
-                corner: 10
+                margin: new Margin(100, 0, 100, 0)
             },
             new go.Binding('location'),
             $(
                 go.Shape,
                 {
-                    strokeWidth: 2
+                    strokeWidth: 1
                 },
                 new go.Binding('stroke', 'color'),
                 new go.Binding('stroke', 'isHighlighted', this.getLinkHighlightedColor).ofObject() // binding source is Node.isHighlighted
             ),
+
             $(
                 go.Shape,
                 {
-                    toArrow: 'OpenTriangle',
-                    strokeWidth: 4
+                    toArrow: 'Standard',
+                    scale: 1.2,
+                    strokeWidth: 1
                 },
                 new go.Binding('fill', 'color'),
                 new go.Binding('stroke', 'isHighlighted', this.getLinkHighlightedColor).ofObject() // binding source is Node.isHighlighted
@@ -259,22 +260,27 @@ class MyDiagram extends Component<MyDiagramProps> {
                 'Rectangle',
                 {
                     width: 80,
-                    height: 80,
+                    height: 42,
                     opacity: 0
                 },
-                new go.Binding('fill', 'color'),
                 new go.Binding('fill', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject(), // binding source is Node.isHighlighted
                 new go.Binding('stroke', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject() // binding source is Node.isHighlighted
             ),
             $(
-                go.Shape,
-                'PlusLine',
+                go.Panel,
+                'Auto',
                 {
-                    width: 15,
-                    height: 15,
-                    strokeWidth: 6
+                    padding: new go.Margin(0, 0, 10, 0),
+                    alignment: go.Spot.Top
                 },
-                new go.Binding('fill', 'color'),
+                $(go.Shape, 'Circle', {
+                    width: 22,
+                    height: 22,
+                    fill: colors.icon_bg,
+                    stroke: colors.hover_bg,
+                    strokeWidth: 1
+                }),
+                $(go.Shape, 'PlusLine', { width: 11, height: 11, fill: null, stroke: colors.hover_bg, strokeWidth: 2 }), //     new go.Binding('fill', 'color'),
                 new go.Binding('fill', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject(), // binding source is Node.isHighlighted
                 new go.Binding('stroke', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject(), // binding source is Node.isHighlighted
                 new go.Binding('opacity', 'isHighlighted', this.getLinkPlusLineHighlightedopacity).ofObject() // binding source is Node.isHighlighted
@@ -294,7 +300,7 @@ class MyDiagram extends Component<MyDiagramProps> {
                     layerSpacing: 40,
                     arrangementSpacing: new go.Size(30, 10)
                 }),
-                padding: new go.Margin(5, 0, 5, 0),
+                padding: new go.Margin(DiagramSetting.padding, 0, DiagramSetting.padding, 0),
                 movable: DiagramSetting.moveNode,
                 mouseEnter: this.mouseEnterHandler,
                 mouseLeave: this.mouseLeaveHandler,
@@ -440,8 +446,17 @@ class MyDiagram extends Component<MyDiagramProps> {
             )
         ); // end Group
 
-        // var graygrad = $(go.Brush, "Linear",
-        //     { 0: "white", 0.1: "whitesmoke", 0.9: "whitesmoke", 1: "lightgray" });
+        //
+
+        myDiagram.linkTemplateMap.add(
+            'CondtionLink',
+            $(go.Link, 'Auto', {
+                selectable: false,
+                movable: false,
+                deletable: false,
+                opacity: 0
+            })
+        );
 
         myDiagram.nodeTemplateMap.add(
             'CondtionNode',
@@ -518,7 +533,7 @@ class MyDiagram extends Component<MyDiagramProps> {
                     $(go.Placeholder, {
                         padding: new go.Margin(10, 15),
                         alignment: go.Spot.TopLeft,
-                        minSize: new go.Size(160, 50)
+                        minSize: new go.Size(200, 50)
                     })
                 ), // end Vertical Panel
 
@@ -542,11 +557,17 @@ class MyDiagram extends Component<MyDiagramProps> {
                     $(go.Shape, 'Circle', {
                         width: 22,
                         height: 22,
-                        fill: 'white',
-                        stroke: 'dodgerblue',
-                        strokeWidth: 3
+                        fill: colors.icon_bg,
+                        stroke: colors.hover_bg,
+                        strokeWidth: 1
                     }),
-                    $(go.Shape, 'PlusLine', { width: 11, height: 11, fill: null, stroke: 'dodgerblue', strokeWidth: 3 })
+                    $(go.Shape, 'PlusLine', {
+                        width: 11,
+                        height: 11,
+                        fill: null,
+                        stroke: colors.hover_bg,
+                        strokeWidth: 1
+                    })
                 ),
                 // input port
                 $(
@@ -555,7 +576,6 @@ class MyDiagram extends Component<MyDiagramProps> {
                     {
                         alignment: go.Spot.Left,
                         margin: new go.Margin(20, 0, 0, 1),
-                        portId: 'to',
                         toLinkable: false,
                         cursor: 'pointer',
                         click: (e: go.InputEvent, thisObj: GraphObject) => {
@@ -568,11 +588,17 @@ class MyDiagram extends Component<MyDiagramProps> {
                     $(go.Shape, 'Circle', {
                         width: 22,
                         height: 22,
-                        fill: 'white',
-                        stroke: 'dodgerblue',
-                        strokeWidth: 3
+                        fill: colors.icon_bg,
+                        stroke: colors.hover_bg,
+                        strokeWidth: 1
                     }),
-                    $(go.Shape, 'PlusLine', { width: 11, height: 11, fill: null, stroke: 'dodgerblue', strokeWidth: 3 })
+                    $(go.Shape, 'PlusLine', {
+                        width: 11,
+                        height: 11,
+                        fill: null,
+                        stroke: colors.hover_bg,
+                        strokeWidth: 1
+                    })
                 )
             )
         );
@@ -583,7 +609,8 @@ class MyDiagram extends Component<MyDiagramProps> {
                 go.Node,
                 'Panel',
                 {
-                    padding: new go.Margin(20, 0, 5, 0),
+                    margin: new go.Margin(25, 0, 0, 0),
+                    padding: new go.Margin(5),
                     movable: false,
                     deletable: false
                 },
@@ -613,7 +640,7 @@ class MyDiagram extends Component<MyDiagramProps> {
                 go.Node,
                 'Panel',
                 {
-                    padding: new go.Margin(7, 0, 15, 0),
+                    padding: new go.Margin(5, 2),
                     movable: false,
                     deletable: false
                 },
@@ -654,7 +681,6 @@ class MyDiagram extends Component<MyDiagramProps> {
     private getLinkHighlightedColor = (h, shape): string => {
         // tslint:disable-next-line: curly
         if (this.props.isHight && this.props!.hightNode!.eType === NodeEventType.HightLightLink) {
-            console.log(this.props!.hightNode!.toLink!.from + '22222' + shape.part.from);
             if (this.props!.hightNode!.toLink!.from === shape.part.from) {
                 return colors.drag_bg;
             }
@@ -672,12 +698,10 @@ class MyDiagram extends Component<MyDiagramProps> {
         // tslint:disable-next-line: curly
         if (h && mouseType)
             return mouseType === 'Hover' ? (colors.groupPanel_hover_bg as string) : (colors.groupPanel_bg as string);
-        var c = shape.part.data.color;
+        // var c = shape.part.data.color;
         if (this.props.drager && this.props.drager.name) {
             return colors.groupPanel_bg;
         }
-
-        console.log('-------------color11111--------' + c);
 
         return colors.groupPanel_bg;
     };

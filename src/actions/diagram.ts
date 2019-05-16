@@ -37,7 +37,9 @@ export enum NodeEventType {
     Drag2Link = 'Drag_to_link',
     Move2Node = 'Move_to_node',
     Move2Group = 'Move_to_group',
-    Move2Link = 'Move_to_link'
+    Move2Link = 'Move_to_link',
+    LinkHightLight = 'Link_HightLight',
+    LinkNomal = 'Link_Normal'
 }
 
 /**
@@ -71,7 +73,7 @@ export const nodeSelected = actionCreator<string>('NODE_SELECTED');
 export const nodeDeselected = actionCreator<string>('NODE_DESELECTED');
 export const removeNode = actionCreator<string>('REMOVE_NODE');
 // export const nodeDropedTo = actionCreator<string>('NODE_DropedTo');
-export const updateNodeColor = actionCreator('UPDATE_NODE_COLOR');
+export const updateNodeColor = actionCreator<NodeEvent>('UPDATE_NODE_COLOR');
 export const UpdateNodeText = actionCreator<NodeEvent>('UPDATE_NODE_TEXT');
 
 /**
@@ -90,4 +92,4 @@ export const removeLink = actionCreator<WFLinkModel>('REMOVE_LINK');
  * WFNode 相关操作
  */
 export const dragStartWfNode = actionCreator<DragNodeEvent>('DragStart_WfNode');
-//export const dragEndWfNode = actionCreator<DragNodeEvent>('DragEnd_WfNode');
+export const dragEndWfNode = actionCreator<DragNodeEvent>('DragEnd_WfNode');

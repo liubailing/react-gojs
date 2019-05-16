@@ -4,7 +4,15 @@ import { connect } from 'react-redux';
 import { Action } from 'typescript-fsa';
 import { DiagramState, WFNodeModel, WFLinkModel } from '../../reducers/diagramReducer';
 import { DiagramModel } from 'react-gojs';
-import { init, dragStartWfNode, DragNodeEvent } from '../../actions/diagram';
+import {
+    init,
+    dragStartWfNode,
+    dragEndWfNode,
+    updateNodeColor,
+    DragNodeEvent,
+    NodeEvent,
+    NodeEventType
+} from '../../actions/diagram';
 import './wfNode.css';
 
 const testData = {
@@ -88,6 +96,8 @@ const mapStateToProps = (state: DiagramState) => {
 interface WFNodeDispatchProps {
     initHandler: (type: WFNodeType) => void;
     dragStartWfNodeHandler: (event: DragNodeEvent) => void;
+    dragEndWfNodeHandler: (event: DragNodeEvent) => void;
+    updateNodeColorHander: (event: NodeEvent) => void;
 }
 
 interface WFNodeProps extends WFNodeDispatchProps {
@@ -95,18 +105,26 @@ interface WFNodeProps extends WFNodeDispatchProps {
 }
 
 const mapDispatchToProps = (
-    dispatch: Dispatch<Action<DiagramModel<WFNodeModel, WFLinkModel>> | Action<DragNodeEvent>>
+    dispatch: Dispatch<Action<DiagramModel<WFNodeModel, WFLinkModel>> | Action<DragNodeEvent> | Action<NodeEvent>>
 ): WFNodeDispatchProps => {
     return {
         initHandler: (type: WFNodeType) => {
             // tslint:disable-next-line: curly
             if (!type) dispatch(init(testData));
         },
-        dragStartWfNodeHandler: (event: DragNodeEvent) => dispatch(dragStartWfNode(event))
+        dragStartWfNodeHandler: (event: DragNodeEvent) => dispatch(dragStartWfNode(event)),
+        dragEndWfNodeHandler: (event: DragNodeEvent) => dispatch(dragEndWfNode(event)),
+        updateNodeColorHander: (event: NodeEvent) => dispatch(updateNodeColor(event))
     };
 };
 
-const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, dragStartWfNodeHandler }) => {
+const WFNode: React.FC<WFNodeProps> = ({
+    type,
+    initHandler,
+    dragStartWfNodeHandler,
+    dragEndWfNodeHandler,
+    updateNodeColorHander
+}) => {
     let isBtn = false;
     let src = '',
         title = '';
@@ -175,11 +193,14 @@ const WFNode: React.FC<WFNodeProps> = ({ type, initHandler, dragStartWfNodeHandl
                     data-type={type}
                     onDragStart={(event: any) => {
                         event.dataTransfer.setData('text', event.target.textContent);
+
+                        updateNodeColorHander({ eType: NodeEventType.LinkHightLight });
                         dragStartWfNodeHandler({ type: type, name: title, event: event });
                     }}
                     onDragEnd={(event: any) => {
                         event.dataTransfer.setData('text', '');
-                        //dragEndWfNodeHandler({ type: type, name:title, event: event });
+                        updateNodeColorHander({ eType: NodeEventType.LinkNomal });
+                        dragEndWfNodeHandler({ type: type, name: title, event: event });
                     }}
                     title={`${title}`}
                 >

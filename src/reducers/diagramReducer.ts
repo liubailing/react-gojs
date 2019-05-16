@@ -17,7 +17,7 @@ import {
     //getDiagram,
     setDiagram,
     dragStartWfNode,
-    // dragEndWfNode,
+    dragEndWfNode,
     setNodeHighlight
 } from '../actions/diagram';
 import go, { Diagram } from 'gojs';
@@ -43,12 +43,14 @@ export const colors = {
     font: '#fff',
     hover_font: '#ddd',
     group_border: '#000',
-    group_header_bg: '#5685d6',
+    groupHeader_bg: '#5685d6',
+    groupPanel_bg: '#fff',
+    groupPanel_hover_bg: '#fff',
     group_backgroud: '#eee',
-    link_hover_bg: '#333',
-    link_drag_bg: 'red',
+    link_hover_bg: '#5685d6',
+    link_drag_bg: '#215ec8',
     linkPlus_hover_bg: 'transparent',
-    linkPlus_drag_bg: 'red',
+    linkPlus_drag_bg: '#215ec8',
     link: '#999',
     transparent: 'transparent'
 };
@@ -98,7 +100,7 @@ const getOneNode = (payload: string, group: string = '', isGroup: boolean = fals
 
 const getLink = (from: string, to: string, group: string): WFLinkModel => {
     if (from === to) return { from: '', to: '', group: '' };
-    return { from: from, to: to, group: group, canDroped: true };
+    return { from: from, to: to, group: group, canDroped: true, color: '' };
 };
 
 const initHandler = (state: DiagramState, payload: DiagramModel<WFNodeModel, WFLinkModel>): DiagramState => {
@@ -108,18 +110,33 @@ const initHandler = (state: DiagramState, payload: DiagramModel<WFNodeModel, WFL
     };
 };
 
-const updateNodeColorHandler = (state: DiagramState): DiagramState => {
+/**
+ * 改变颜色
+ * @param state
+ * @param ev
+ */
+const updateNodeColorHandler = (state: DiagramState, ev: NodeEvent): DiagramState => {
     const updatedNodes = state.model.nodeDataArray.map(node => {
         return {
-            ...node
+            ...node,
+            color: ev.eType === NodeEventType.LinkHightLight ? colors.group_backgroud : colors.hover_bg
+        };
+    });
+
+    const updatedLinks = state.model.linkDataArray.map(link => {
+        return {
+            ...link,
+            // color: ev.eType === NodeEventType.LinkHightLight?colors.link_hover_bg:colors.link
+            color: 'red',
+            canDroped: false
         };
     });
 
     return {
         ...state,
         model: {
-            ...state.model,
-            nodeDataArray: updatedNodes
+            nodeDataArray: updatedNodes,
+            linkDataArray: updatedLinks
         }
     };
 };
@@ -162,7 +179,7 @@ const updateNodeTextHandler = (state: DiagramState, payload: NodeEvent): Diagram
  */
 const addNodeHandler = (state: DiagramState, payload: string): DiagramState => {
     const linksToAdd: WFLinkModel[] = state.selectedNodeKeys.map(parent => {
-        return { from: parent, to: payload, group: '', color: 'pink' };
+        return { from: parent, to: payload, group: '' };
     });
     return {
         ...state,
@@ -189,7 +206,7 @@ const addNodeAfterDropNodeHandler = (state: DiagramState, ev: NodeEvent): Diagra
 
     let node: WFNodeModel;
     let nodeAdd: boolean = false;
-    let lineAdd: boolean = true;
+    let linkAction: boolean = true;
     let nodes_Con: WFNodeModel[] = [];
 
     // 1、锁定节点
@@ -204,8 +221,9 @@ const addNodeAfterDropNodeHandler = (state: DiagramState, ev: NodeEvent): Diagra
             node = getOneNode(state.drager.name, ev.toNode.group);
             if (ev.eType === NodeEventType.Drag2Group) {
                 node.group = ev.toNode.key;
-                lineAdd = false;
+                linkAction = false;
             }
+
             if (isGroupArr.includes(state.drager.type)) {
                 node.isGroup = true;
                 node.color = colors.group_backgroud;
@@ -241,19 +259,21 @@ const addNodeAfterDropNodeHandler = (state: DiagramState, ev: NodeEvent): Diagra
     }
 
     let oldLink: WFLinkModel;
-    let linkToRemoveIndex = state.model.linkDataArray.findIndex(x => x.from === ev.toNode!.key);
-
-    if (linkToRemoveIndex > -1) {
-        oldLink = state.model.linkDataArray[linkToRemoveIndex];
-    }
-
-    // 3、新增的两条线
+    let linkToRemoveIndex = -1;
     const linksToAdd: WFLinkModel[] = [];
-    if (linkToRemoveIndex > -1) {
-        linksToAdd.push(getLink(oldLink!.from, node.key, oldLink!.group));
-        linksToAdd.push(getLink(node.key, oldLink!.to, oldLink!.group));
-    } else if (lineAdd) {
-        linksToAdd.push(getLink(ev.toNode!.key, node.key, ev.toNode!.group));
+    linkToRemoveIndex = state.model.linkDataArray.findIndex(x => x.from === ev.toNode!.key);
+    if (linkAction) {
+        if (linkToRemoveIndex > -1) {
+            oldLink = state.model.linkDataArray[linkToRemoveIndex];
+        }
+
+        // 3、新增的两条线
+        if (linkToRemoveIndex > -1) {
+            linksToAdd.push(getLink(oldLink!.from, node.key, oldLink!.group));
+            linksToAdd.push(getLink(node.key, oldLink!.to, oldLink!.group));
+        } else {
+            linksToAdd.push(getLink(ev.toNode!.key, node.key, ev.toNode!.group));
+        }
     }
 
     return {
@@ -265,7 +285,7 @@ const addNodeAfterDropNodeHandler = (state: DiagramState, ev: NodeEvent): Diagra
                 ? [...state.model.nodeDataArray, ...nodes_Con, node]
                 : [...state.model.nodeDataArray, ...nodes_Con],
             linkDataArray:
-                linkToRemoveIndex > -1
+                linkAction && linkToRemoveIndex > -1
                     ? [
                           ...state.model.linkDataArray.slice(0, linkToRemoveIndex),
                           ...state.model.linkDataArray.slice(linkToRemoveIndex + 1),
@@ -305,7 +325,6 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, ev: NodeEvent): Diagra
                 node.isGroup = true;
                 node.color = colors.group_backgroud;
                 if (state.drager.type === WFNodeType.Condition) {
-                    debugger;
                     // 1.2 默认生成两个字条件
                     let n: WFNodeModel;
                     for (let i = 0; i < 2; i++) {
@@ -470,12 +489,12 @@ const dragStartWfNodeHandler = (state: DiagramState, payload: DragNodeEvent): Di
     };
 };
 
-// const dragEndWfNodeHandler = (state: DiagramState, payload: DragNodeEvent): DiagramState => {
-//     return {
-//         ...state,
-//         drager: null
-//     };
-// };
+const dragEndWfNodeHandler = (state: DiagramState, payload: DragNodeEvent): DiagramState => {
+    return {
+        ...state,
+        drager: null
+    };
+};
 
 // tslint:disable-next-line: no-any
 const setNodeHighlightHander = (state: DiagramState, node: any): DiagramState => {
@@ -494,14 +513,21 @@ const setNodeHighlightHander = (state: DiagramState, node: any): DiagramState =>
     return state;
 };
 
+const getModel = () => {
+    let s = getOneNode('开始');
+    let n = getOneNode('结束');
+
+    return {
+        nodeDataArray: [s, n],
+        linkDataArray: [getLink(s.key, n.key, '')]
+    };
+};
+
 export const diagramReducer: Reducer<DiagramState> = reducerWithInitialState<DiagramState>({
     drager: null,
     currKey: '',
     diagram: new go.Diagram(),
-    model: {
-        nodeDataArray: [getOneNode('Root')],
-        linkDataArray: []
-    },
+    model: getModel(),
     selectedNodeKeys: []
 })
     .case(init, initHandler)
@@ -522,7 +548,7 @@ export const diagramReducer: Reducer<DiagramState> = reducerWithInitialState<Dia
     // .case(getDiagram, getDiagramHandler)
 
     .case(dragStartWfNode, dragStartWfNodeHandler)
-    // .case(dragEndWfNode, dragEndWfNodeHandler)
+    .case(dragEndWfNode, dragEndWfNodeHandler)
     .case(setNodeHighlight, setNodeHighlightHander)
     .build();
 

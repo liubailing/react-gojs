@@ -243,7 +243,7 @@ class MyDiagram extends Component<MyDiagramProps> {
                     toArrow: 'OpenTriangle',
                     strokeWidth: 4
                 },
-                new go.Binding('stroke', 'color'),
+                new go.Binding('fill', 'color'),
                 new go.Binding('stroke', 'isHighlighted', this.getLinkHighlightedColor).ofObject() // binding source is Node.isHighlighted
             ),
             $(
@@ -303,8 +303,8 @@ class MyDiagram extends Component<MyDiagramProps> {
                     stroke: colors.group_border,
                     strokeWidth: 1
                 },
-                new go.Binding('fill', colors.group_backgroud),
-                new go.Binding('fill', 'isHighlighted', this.getHighlightedColor).ofObject() // binding source is Node.isHighlighted
+                new go.Binding('fill', 'color'),
+                new go.Binding('fill', 'isHighlighted', this.getGroupHighlightedColor).ofObject() // binding source is Node.isHighlighted
             ),
             $(
                 go.Panel,
@@ -319,10 +319,9 @@ class MyDiagram extends Component<MyDiagramProps> {
                     {
                         padding: new go.Margin(5, 0, 5, 0),
                         defaultAlignment: go.Spot.Top,
-                        background: colors.group_header_bg,
                         stretch: go.GraphObject.Horizontal
                     },
-                    new go.Binding('fill', 'isHighlighted', this.getGroupHighlightedColor).ofObject(), // binding source is Node.isHighlighted
+                    new go.Binding('background', 'isHighlighted', this.getGroupHeaderHighlightedColor).ofObject(), // binding source is Node.isHighlighted
                     // the SubGraphExpanderButton is a panel that functions as a button to expand or collapse the subGraph
                     $('SubGraphExpanderButton', {
                         padding: new go.Margin(0, 0, 5, 0),
@@ -390,37 +389,70 @@ class MyDiagram extends Component<MyDiagramProps> {
 
     private getHighlightedColor = (h, shape): string => {
         // tslint:disable-next-line: curly
-        if (h) return mouseType === 'Hover' ? (colors.hover_bg as string) : (colors.drag_bg as string);
-        var c = shape.part.data.color;
+        if (h && mouseType) return mouseType === 'Hover' ? (colors.hover_bg as string) : (colors.drag_bg as string);
+        let c = shape.part.data.color;
         return c ? c : colors.backgroud;
     };
 
     private getLinkHighlightedColor = (h, shape): string => {
         // tslint:disable-next-line: curly
-        if (h) return mouseType === 'Hover' ? (colors.link_hover_bg as string) : (colors.link_drag_bg as string);
+        if (h && mouseType)
+            return mouseType === 'Hover' ? (colors.link_hover_bg as string) : (colors.link_drag_bg as string);
+
+        if (this.props.drager && this.props.drager.name) {
+            return colors.link_hover_bg;
+        }
         var c = shape.part.data.color;
+
         return c ? c : colors.link;
     };
 
     private getGroupHighlightedColor = (h, shape): string => {
         // tslint:disable-next-line: curly
-        if (h) return mouseType === 'Hover' ? (colors.link_hover_bg as string) : (colors.link_drag_bg as string);
+        if (h && mouseType)
+            return mouseType === 'Hover' ? (colors.link_hover_bg as string) : (colors.link_drag_bg as string);
         var c = shape.part.data.color;
-        return c ? c : colors.link;
+        if (this.props.drager && this.props.drager.name) {
+            return colors.groupPanel_bg;
+        }
+
+        console.log('-------------color11111--------' + c);
+
+        return colors.groupPanel_bg;
+    };
+
+    private getGroupHeaderHighlightedColor = (h, shape): string => {
+        // tslint:disable-next-line: curly
+        if (h && mouseType)
+            return mouseType === 'Hover' ? (colors.link_hover_bg as string) : (colors.link_drag_bg as string);
+
+        if (this.props.drager && this.props.drager.name) {
+            return colors.groupHeader_bg;
+        }
+
+        return colors.hover_bg;
     };
 
     private getLinkPlusLineHighlightedColor = (h, shape): string => {
         // tslint:disable-next-line: curly
-        if (h)
+        if (h && mouseType) {
             return mouseType === 'Hover' ? (colors.linkPlus_hover_bg as string) : (colors.linkPlus_drag_bg as string);
+        }
+
         var c = shape.part.data.color;
+        if (this.props.drager && this.props.drager.name) {
+            return colors.link_hover_bg;
+        }
         return c ? c : colors.link;
     };
 
     private getLinkPlusLineHighlightedopacity = (h, shape): number => {
         // tslint:disable-next-line: curly
-        if (h) return mouseType === 'Hover' ? 1 : 0.6;
+        if (h && mouseType) return mouseType === 'Hover' ? 1 : 0.6;
 
+        if (this.props.drager && this.props.drager.name) {
+            return 1;
+        }
         return 0;
     };
 
@@ -450,7 +482,7 @@ class MyDiagram extends Component<MyDiagramProps> {
      * @param obj
      */
     private mouseDragEnterHandler(e: go.InputEvent, obj: GraphObject): void {
-        mouseType = '';
+        mouseType = 'Drag';
         this.props.setNodeHighlightHandler(obj);
     }
 

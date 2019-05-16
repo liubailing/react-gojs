@@ -39,7 +39,12 @@ export enum NodeEventType {
     Move2Group = 'Move_to_group',
     Move2Link = 'Move_to_link',
     LinkHightLight = 'Link_HightLight',
-    LinkNomal = 'Link_Normal'
+    LinkNomal = 'Link_Normal',
+    AddPrvNode = 'Add_Prv_Node',
+    AddNextNode = 'Add_Next_Node',
+    HightLightLink = 'HightLight_Link',
+    HightLightNode = 'HightLight_Node',
+    HightLightGroup = 'HightLight_group'
 }
 
 /**
@@ -59,7 +64,8 @@ export const init = actionCreator<DiagramModel<WFNodeModel, WFLinkModel>>('INIT'
 //export const getDiagram = actionCreator('Get_Diagram');
 export const setDiagram = actionCreator<Diagram>('Set_Diagram');
 // tslint:disable-next-line: no-any
-export const setNodeHighlight = actionCreator<any>('Set_Node_Highlight');
+export const setNodeHighlight = actionCreator<NodeEvent>('Set_Node_Highlight');
+export const clearNodeHighlight = actionCreator('Clear_Node_Highlight');
 
 /**
  * 节点相关操作
@@ -68,6 +74,7 @@ export const newNode = actionCreator<string>('Get_Node');
 export const addNode = actionCreator<string>('ADD_NODE');
 export const addNodeByDropNode = actionCreator<NodeEvent>('ADD_NODE_DropNode');
 export const addNodeByDropLink = actionCreator<NodeEvent>('ADD_NODE_DropLink');
+export const addNodeBySelf = actionCreator<NodeEvent>('ADD_NODE_ClickSelf');
 //export const addNodeByDropGroup = actionCreator<string>('ADD_NODE_DropGroup');
 export const nodeSelected = actionCreator<string>('NODE_SELECTED');
 export const nodeDeselected = actionCreator<string>('NODE_DESELECTED');

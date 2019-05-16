@@ -24,7 +24,7 @@ const mapStateToProps = (state: DiagramState) => {
 };
 
 interface WFDroperDispatchProps {
-    setNodeHighlightHandler: (node: any) => void;
+    setNodeHighlightHandler: (node: NodeEvent) => void;
     addNodeByDropLinkHandler: (ev: NodeEvent) => void;
     addNodeByDropNodeHandler: (ev: NodeEvent) => void;
 }
@@ -33,7 +33,7 @@ const mapDispatchToProps = (
     dispatch: Dispatch<Action<string | null> | Action<WFLinkModel> | Action<NodeEvent>>
 ): WFDroperDispatchProps => {
     return {
-        setNodeHighlightHandler: (node: any) => {
+        setNodeHighlightHandler: (node: NodeEvent) => {
             dispatch(setNodeHighlight(node));
         },
         addNodeByDropLinkHandler: (ev: NodeEvent) => {
@@ -56,12 +56,19 @@ const WFDroper: React.FC<WFDroperProps> = ({
         <div
             className="wfDiagram"
             style={{ backgroundColor: '#fff' }}
-            onDragEnter={(e: any) => {
-                if (!drager) e.preventDefault();
-                e.target.style.backgroundColor = '#ddd';
+            onDragEnter={(event: any) => {
+                if (!drager) event.preventDefault();
+                event.target.style.backgroundColor = '#ddd';
+                console.log('-------------------onDragEnter ----------------');
             }}
             onDragLeave={(e: any) => {
                 e.target.style.backgroundColor = '';
+                console.log('-------------------onDragLeave ----------------');
+            }}
+            onMouseMove={(event: any) => {
+                event.preventDefault();
+                if (!drager) return;
+                console.log('-------------------onMouseMove ----------------');
             }}
             onDragOver={(event: any) => {
                 event.preventDefault();
@@ -89,15 +96,24 @@ const WFDroper: React.FC<WFDroperProps> = ({
                     var point = myDiagram.transformViewToDoc(new go.Point(mx, my));
                     var curnode: any = myDiagram.findPartAt(point, true);
 
-                    if (curnode instanceof go.Link) {
-                        console.log('-------------------Link ----------------');
-                        setNodeHighlightHandler(curnode);
-                    } else if (curnode instanceof go.Group) {
-                        setNodeHighlightHandler(curnode);
-                    } else if (curnode instanceof go.Node) {
-                        setNodeHighlightHandler(curnode);
-                    } else {
-                        setNodeHighlightHandler(null);
+                    if (curnode && curnode.part) {
+                        if (curnode instanceof go.Link) {
+                            setNodeHighlightHandler({
+                                eType: NodeEventType.HightLightLink,
+                                toLink: curnode.part!.data
+                            });
+                        } else if (curnode instanceof go.Group) {
+                            setNodeHighlightHandler({
+                                eType: NodeEventType.HightLightGroup,
+                                toNode: curnode.part!.data
+                            });
+                        } else if (curnode instanceof go.Node) {
+                            console.log('-------------------Group ----------------');
+                            setNodeHighlightHandler({
+                                eType: NodeEventType.HightLightNode,
+                                toNode: curnode.part!.data
+                            });
+                        }
                     }
                 }
             }}
@@ -127,25 +143,26 @@ const WFDroper: React.FC<WFDroperProps> = ({
                     var point = myDiagram.transformViewToDoc(new go.Point(mx, my));
                     var curnode: any = myDiagram.findPartAt(point, true);
 
-                    if (curnode instanceof go.Link) {
-                        let l = (curnode as any)!.jb;
-                        if (l) {
-                            addNodeByDropLinkHandler({ eType: NodeEventType.Drag2Link, toLink: l as WFLinkModel });
+                    if (curnode && curnode.part) {
+                        if (curnode instanceof go.Link) {
+                            addNodeByDropLinkHandler({
+                                eType: NodeEventType.Drag2Link,
+                                toLink: curnode.part!.data as WFLinkModel
+                            });
+                        } else if (curnode instanceof go.Group) {
+                            addNodeByDropNodeHandler({
+                                eType: NodeEventType.Drag2Group,
+                                toNode: curnode.part!.data as WFNodeModel
+                            });
+                            console.log('-------------------Group ----------------');
+                        } else if (curnode instanceof go.Node) {
+                            addNodeByDropNodeHandler({
+                                eType: NodeEventType.Drag2Node,
+                                toNode: curnode.part!.data as WFNodeModel
+                            });
+                            console.log('-------------------Group ----------------');
+                        } else {
                         }
-                    } else if (curnode instanceof go.Group) {
-                        let l = (curnode as any)!.jb;
-                        if (l) {
-                            curnode.expandSubGraph();
-                            addNodeByDropNodeHandler({ eType: NodeEventType.Drag2Group, toNode: l as WFNodeModel });
-                        }
-                        console.log('-------------------Group ----------------');
-                    } else if (curnode instanceof go.Node) {
-                        let l = (curnode as any)!.jb;
-                        if (l) {
-                            addNodeByDropNodeHandler({ eType: NodeEventType.Drag2Node, toNode: l as WFNodeModel });
-                        }
-                        console.log('-------------------Group ----------------');
-                    } else {
                     }
                 }
             }}

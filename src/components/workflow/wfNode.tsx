@@ -193,7 +193,6 @@ const WFNode: React.FC<WFNodeProps> = ({
                     data-type={type}
                     onDragStart={(event: any) => {
                         event.dataTransfer.setData('text', event.target.textContent);
-
                         updateNodeColorHander({ eType: NodeEventType.LinkHightLight });
                         dragStartWfNodeHandler({ type: type, name: title, event: event });
                     }}

@@ -11,11 +11,10 @@ import {
     removeNode,
     removeLink,
     UpdateNodeText,
-    addNode,
+    //addNode,
     setDiagram,
-    newNode,
-    // linkDropedTo,
-    // nodeDropedTo,
+    //newNode,
+    addNodeBySelf,
     addNodeByDropLink,
     addNodeByDropNode,
     setNodeHighlight
@@ -39,11 +38,12 @@ interface WFDroperDispatchProps {
     onModelChangeHandler: (event: ModelChangeEvent<WFNodeModel, WFLinkModel>) => void;
     onTextChangeHandler: (event: NodeEvent) => void;
     setDiagramHandler: (diagram: Diagram) => void;
-    addNodeHandler: (name: string) => void;
-    newNodeHandler: (name: string) => void;
+    // addNodeHandler: (name: string) => void;
+    // newNodeHandler: (name: string) => void;
     // linkDropedToHandler: (link: WFLinkModel) => void;
     // nodeDropedToHandler: (key: string) => void;
     // tslint:disable-next-line: no-any
+    addNodeBySelfHandler: (ev: NodeEvent) => void;
     addNodeByDropLinkHandler: (ev: NodeEvent) => void;
     addNodeByDropNodeHandler: (ev: NodeEvent) => void;
     // tslint:disable-next-line: no-any
@@ -51,7 +51,7 @@ interface WFDroperDispatchProps {
 }
 
 const mapDispatchToProps = (
-    dispatch: Dispatch<Action<string> | Action<Diagram> | Action<WFLinkModel> | Action<any | null> | Action<NodeEvent>>
+    dispatch: Dispatch<Action<string> | Action<Diagram> | Action<WFLinkModel> | Action<any> | Action<NodeEvent>>
 ): WFDroperDispatchProps => {
     return {
         onNodeSelectionHandler: (key: string, isSelected: boolean) => {
@@ -81,18 +81,21 @@ const mapDispatchToProps = (
         setDiagramHandler: (diagram: Diagram) => {
             dispatch(setDiagram(diagram));
         },
-        addNodeHandler: type => {
-            dispatch(addNode(`${type}-${++count}`));
-        },
-        newNodeHandler: (name: string) => {
-            dispatch(newNode(`${name}-${++count}`));
-        },
+        // addNodeHandler: type => {
+        //     dispatch(addNode(`${type}-${++count}`));
+        // },
+        // newNodeHandler: (name: string) => {
+        //     dispatch(newNode(`${name}-${++count}`));
+        // },
         // linkDropedToHandler: (link: WFLinkModel) => {
         //     dispatch(linkDropedTo(link));
         // },
         // nodeDropedToHandler: (key: string) => {
         //     dispatch(nodeDropedTo(key));
         // },
+        addNodeBySelfHandler: (ev: NodeEvent) => {
+            dispatch(addNodeBySelf(ev));
+        },
         addNodeByDropLinkHandler: (ev: NodeEvent) => {
             dispatch(addNodeByDropLink(ev));
         },
@@ -102,13 +105,13 @@ const mapDispatchToProps = (
 
         // tslint:disable-next-line: no-any
         setNodeHighlightHandler: (node: any) => {
-            dispatch(setNodeHighlight(node));
+            if (node) dispatch(setNodeHighlight(node));
         }
     };
 };
 
 let mouseType = '';
-let count = 0;
+// let count = 0;
 let myDiagram: Diagram;
 
 class MyDiagram extends Component<MyDiagramProps> {
@@ -148,7 +151,7 @@ class MyDiagram extends Component<MyDiagramProps> {
                 arrangement: go.TreeLayout.ArrangementVertical,
                 treeStyle: go.TreeLayout.StyleLayered,
                 nodeSpacing: 80,
-                layerSpacing: 60
+                layerSpacing: 40
             }),
             TextEdited: this.onTextEdited
         });
@@ -171,7 +174,9 @@ class MyDiagram extends Component<MyDiagramProps> {
                 selectionChanged: node => {
                     console.log('selectionChanged');
                     this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
-                }
+                },
+                padding: new go.Margin(2, 0, 2, 0),
+                minSize: new go.Size(180, 20)
             },
             new go.Binding('location'),
             $(
@@ -188,7 +193,8 @@ class MyDiagram extends Component<MyDiagramProps> {
                 {
                     margin: 8,
                     editable: true,
-                    stroke: colors.font
+                    stroke: colors.font,
+                    font: '16px Sans-Serif'
                 },
                 new go.Binding('text', 'label')
             )
@@ -225,6 +231,8 @@ class MyDiagram extends Component<MyDiagramProps> {
                 mouseDragEnter: this.mouseDragEnterHandler,
                 mouseDragLeave: this.mouseDragLeaveHandler,
                 mouseDrop: this.mouseDropHandler,
+                movable: false,
+                deletable: false,
                 routing: go.Link.Orthogonal,
                 corner: 10
             },
@@ -282,8 +290,11 @@ class MyDiagram extends Component<MyDiagramProps> {
                 layout: $(go.TreeLayout, {
                     angle: 90,
                     arrangement: go.TreeLayout.ArrangementHorizontal,
-                    isRealtime: false
+                    isRealtime: false,
+                    layerSpacing: 40,
+                    arrangementSpacing: new go.Size(30, 10)
                 }),
+                padding: new go.Margin(5, 0, 5, 0),
                 movable: DiagramSetting.moveNode,
                 mouseEnter: this.mouseEnterHandler,
                 mouseLeave: this.mouseLeaveHandler,
@@ -333,7 +344,6 @@ class MyDiagram extends Component<MyDiagramProps> {
                         {
                             font: 'Bold 16px Sans-Serif',
                             editable: true,
-                            opacity: 0.75,
                             stroke: colors.font,
                             margin: new go.Margin(0, 10, 5, 10)
                         },
@@ -349,55 +359,306 @@ class MyDiagram extends Component<MyDiagramProps> {
             ) // end Vertical Panel
         ); // end Group
 
-        // Using Panel.isClipping
-        // myDiagram.add($(go.Part, "Spot",
-        //     { isClipping: true, scale: 2  },
-        //     $(go.Shape, "Circle", { width: 55, strokeWidth: 0 } ),
-        //         $(go.Picture, "../../assets/workflow/play.png",
-        //             { width: 55, height: 55 }
-        //         )
-        //     )
-        // );
+        // use a special template for the center node
+        myDiagram.nodeTemplateMap.add(
+            'Condtion',
+            $(
+                go.Group,
+                'Auto',
+                {
+                    // define the group's internal layout
+                    layout: $(go.TreeLayout, {
+                        angle: 0,
+                        arrangement: go.TreeLayout.ArrangementHorizontal,
+                        isRealtime: false,
+                        layerSpacing: 20,
+                        arrangementSpacing: new go.Size(10, 10)
+                    }),
+                    padding: new go.Margin(5, 0, 5, 0),
+                    movable: DiagramSetting.moveNode,
+                    mouseEnter: this.mouseEnterHandler,
+                    mouseLeave: this.mouseLeaveHandler,
+                    mouseDragEnter: this.mouseDragEnterHandler,
+                    mouseDragLeave: this.mouseDragLeaveHandler,
+                    mouseDrop: this.mouseDropHandler,
+                    // the group begins unexpanded;
+                    // upon expansion, a Diagram Listener will generate contents for the group
+                    isSubGraphExpanded: true,
+                    // when a group is expanded, if it contains no parts, generate a subGraph inside of it
+                    subGraphExpandedChanged: function(group) {}
+                },
+                $(
+                    go.Shape,
+                    'Rectangle',
+                    {
+                        stroke: colors.group_border,
+                        strokeWidth: 1
+                    },
+                    new go.Binding('fill', 'color'),
+                    new go.Binding('fill', 'isHighlighted', this.getGroupHighlightedColor).ofObject() // binding source is Node.isHighlighted
+                ),
+                $(
+                    go.Panel,
+                    'Vertical',
+                    {
+                        stretch: go.GraphObject.Horizontal,
+                        defaultAlignment: go.Spot.Left
+                    },
+                    $(
+                        go.Panel,
+                        'Horizontal',
+                        {
+                            padding: new go.Margin(5, 0, 5, 0),
+                            defaultAlignment: go.Spot.Top,
+                            stretch: go.GraphObject.Horizontal
+                        },
+                        new go.Binding('background', 'isHighlighted', this.getGroupHeaderHighlightedColor).ofObject(), // binding source is Node.isHighlighted
+                        // the SubGraphExpanderButton is a panel that functions as a button to expand or collapse the subGraph
+                        $('SubGraphExpanderButton', {
+                            padding: new go.Margin(0, 0, 5, 0),
+                            alignment: go.Spot.Right,
+                            margin: new go.Margin(0, 0, 0, 5)
+                        }),
+                        $(
+                            go.TextBlock,
+                            {
+                                font: 'Bold 16px Sans-Serif',
+                                editable: true,
+                                stroke: colors.font,
+                                margin: new go.Margin(0, 10, 5, 10)
+                            },
+                            new go.Binding('text', 'label').makeTwoWay()
+                        )
+                    ),
+                    // create a placeholder to represent the area where the contents of the group are
+                    $(go.Placeholder, {
+                        padding: new go.Margin(10, 15),
+                        alignment: go.Spot.TopLeft,
+                        minSize: new go.Size(100, 15)
+                    })
+                ) // end Vertical Panel
+            )
+        ); // end Group
 
-        // manage boss info manually when a node or link is deleted from the diagram
-        myDiagram.addDiagramListener('SelectionDeleting', function(e) {
-            var part = e.subject.first(); // e.subject is the myDiagram.selection collection,
-            // so we'll get the first since we know we only have one selection
+        // var graygrad = $(go.Brush, "Linear",
+        //     { 0: "white", 0.1: "whitesmoke", 0.9: "whitesmoke", 1: "lightgray" });
 
-            //debugger;
-            myDiagram.startTransaction('clear boss');
-            if (part instanceof go.Node) {
-                // var it = part.findTreeChildrenNodes(); // find all child nodes
-                // while (it.next()) { // now iterate through them and clear out the boss information
-                //     var child = it.value;
-                //     var bossText = child.findObject("boss"); // since the boss TextBlock is named, we can access it by name
-                //     if (bossText === null) return;
-                //     // bossText.text = "";
-                // }
-            } else if (part instanceof go.Link) {
-                // var child = part.toNode;
-                // var bossText = child.findObject("boss"); // since the boss TextBlock is named, we can access it by name
-                // if (bossText === null) return;
-                //bossText.text = "";
-            }
-            myDiagram.commitTransaction('clear boss');
-        });
+        myDiagram.nodeTemplateMap.add(
+            'CondtionNode',
+            $(
+                go.Group,
+                'Auto',
+                {
+                    // define the group's internal layout
+                    layout: $(go.TreeLayout, {
+                        angle: 90,
+                        arrangement: go.TreeLayout.ArrangementHorizontal,
+                        isRealtime: false
+                    }),
+                    movable: DiagramSetting.moveNode,
+                    mouseEnter: this.mouseEnterHandler,
+                    mouseLeave: this.mouseLeaveHandler,
+                    mouseDragEnter: this.mouseDragEnterHandler,
+                    mouseDragLeave: this.mouseDragLeaveHandler,
+                    mouseDrop: this.mouseDropHandler,
+                    locationSpot: go.Spot.Center, // the location is the center of the Shape
+                    // the group begins unexpanded;
+                    // upon expansion, a Diagram Listener will generate contents for the group
+                    isSubGraphExpanded: true,
+                    // when a group is expanded, if it contains no parts, generate a subGraph inside of it
+                    subGraphExpandedChanged: function(group) {}
+                },
+
+                new go.Binding('location', 'loc', go.Point.parse).makeTwoWay(go.Point.stringify),
+
+                $(
+                    go.Shape,
+                    'Rectangle',
+                    {
+                        stroke: colors.group_border,
+                        strokeWidth: 1
+                    },
+                    new go.Binding('fill', 'color'),
+                    new go.Binding('fill', 'isHighlighted', this.getGroupHighlightedColor).ofObject() // binding source is Node.isHighlighted
+                ),
+                $(
+                    go.Panel,
+                    'Vertical',
+                    {
+                        stretch: go.GraphObject.Horizontal,
+                        defaultAlignment: go.Spot.Left
+                    },
+                    $(
+                        go.Panel,
+                        'Horizontal',
+                        {
+                            padding: new go.Margin(5, 0, 5, 0),
+                            defaultAlignment: go.Spot.Top,
+                            stretch: go.GraphObject.Horizontal
+                        },
+                        new go.Binding('background', 'isHighlighted', this.getGroupHeaderHighlightedColor).ofObject(), // binding source is Node.isHighlighted
+                        // the SubGraphExpanderButton is a panel that functions as a button to expand or collapse the subGraph
+                        $('SubGraphExpanderButton', {
+                            padding: new go.Margin(0, 0, 5, 0),
+                            alignment: go.Spot.Right,
+                            margin: new go.Margin(0, 0, 0, 5)
+                        }),
+                        $(
+                            go.TextBlock,
+                            {
+                                font: 'Bold 16px Sans-Serif',
+                                editable: true,
+                                stroke: colors.font,
+                                margin: new go.Margin(0, 10, 5, 10)
+                            },
+                            new go.Binding('text', 'label').makeTwoWay()
+                        )
+                    ),
+                    // create a placeholder to represent the area where the contents of the group are
+                    $(go.Placeholder, {
+                        padding: new go.Margin(10, 15),
+                        alignment: go.Spot.TopLeft,
+                        minSize: new go.Size(160, 50)
+                    })
+                ), // end Vertical Panel
+
+                // output port
+                $(
+                    go.Panel,
+                    'Auto',
+                    {
+                        alignment: go.Spot.Right,
+                        margin: new go.Margin(20, 0, 0, 1),
+                        portId: 'from',
+                        fromLinkable: false,
+                        cursor: 'pointer',
+                        click: (e: go.InputEvent, thisObj: GraphObject) => {
+                            this.props.addNodeBySelfHandler({
+                                eType: NodeEventType.AddNextNode,
+                                toNode: thisObj.part!.data as WFNodeModel
+                            });
+                        }
+                    },
+                    $(go.Shape, 'Circle', {
+                        width: 22,
+                        height: 22,
+                        fill: 'white',
+                        stroke: 'dodgerblue',
+                        strokeWidth: 3
+                    }),
+                    $(go.Shape, 'PlusLine', { width: 11, height: 11, fill: null, stroke: 'dodgerblue', strokeWidth: 3 })
+                ),
+                // input port
+                $(
+                    go.Panel,
+                    'Auto',
+                    {
+                        alignment: go.Spot.Left,
+                        margin: new go.Margin(20, 0, 0, 1),
+                        portId: 'to',
+                        toLinkable: false,
+                        cursor: 'pointer',
+                        click: (e: go.InputEvent, thisObj: GraphObject) => {
+                            this.props.addNodeBySelfHandler({
+                                eType: NodeEventType.AddPrvNode,
+                                toNode: thisObj.part!.data as WFNodeModel
+                            });
+                        }
+                    },
+                    $(go.Shape, 'Circle', {
+                        width: 22,
+                        height: 22,
+                        fill: 'white',
+                        stroke: 'dodgerblue',
+                        strokeWidth: 3
+                    }),
+                    $(go.Shape, 'PlusLine', { width: 11, height: 11, fill: null, stroke: 'dodgerblue', strokeWidth: 3 })
+                )
+            )
+        );
+
+        myDiagram.nodeTemplateMap.add(
+            'Start',
+            $(
+                go.Node,
+                'Panel',
+                {
+                    padding: new go.Margin(20, 0, 5, 0),
+                    movable: false,
+                    deletable: false
+                },
+                $(
+                    go.Panel,
+                    'Auto',
+                    $(go.Shape, 'Circle', {
+                        minSize: new go.Size(44, 44),
+                        fill: null,
+                        stroke: colors.start,
+                        strokeWidth: 1
+                    }),
+                    $(go.Shape, 'TriangleRight', {
+                        width: 19,
+                        height: 19,
+                        fill: colors.start,
+                        strokeWidth: 0,
+                        margin: new go.Margin(0, 0, 0, 3)
+                    })
+                )
+            )
+        );
+
+        myDiagram.nodeTemplateMap.add(
+            'End',
+            $(
+                go.Node,
+                'Panel',
+                {
+                    padding: new go.Margin(7, 0, 15, 0),
+                    movable: false,
+                    deletable: false
+                },
+                $(
+                    go.Panel,
+                    'Auto',
+                    $(go.Shape, 'Circle', {
+                        minSize: new go.Size(40, 40),
+                        fill: null,
+                        stroke: colors.end,
+                        strokeWidth: 1
+                    }),
+                    $(go.Shape, 'Rectangle', { width: 18, height: 18, fill: colors.end, strokeWidth: 0 })
+                )
+            )
+        );
 
         this.props.setDiagramHandler(myDiagram);
         return myDiagram;
     }
 
+    /**
+     * 高亮选中
+     */
     private getHighlightedColor = (h, shape): string => {
         // tslint:disable-next-line: curly
-        if (h && mouseType) return mouseType === 'Hover' ? (colors.hover_bg as string) : (colors.drag_bg as string);
+        // if (h && mouseType) return mouseType === 'Hover' ? (colors.hover_bg as string) : (colors.drag_bg as string);
+        // console.log('高亮');
+
+        if (this.props.isHight && this.props!.hightNode!.eType === NodeEventType.HightLightNode) {
+            if (this.props!.hightNode!.toNode!.key === shape.part.key) return colors.drag_bg;
+        }
+
         let c = shape.part.data.color;
         return c ? c : colors.backgroud;
     };
 
     private getLinkHighlightedColor = (h, shape): string => {
         // tslint:disable-next-line: curly
-        if (h && mouseType)
-            return mouseType === 'Hover' ? (colors.link_hover_bg as string) : (colors.link_drag_bg as string);
+        if (this.props.isHight && this.props!.hightNode!.eType === NodeEventType.HightLightLink) {
+            console.log(this.props!.hightNode!.toLink!.from + '22222' + shape.part.from);
+            if (this.props!.hightNode!.toLink!.from === shape.part.from) {
+                return colors.drag_bg;
+            }
+        }
 
         if (this.props.drager && this.props.drager.name) {
             return colors.link_hover_bg;
@@ -410,7 +671,7 @@ class MyDiagram extends Component<MyDiagramProps> {
     private getGroupHighlightedColor = (h, shape): string => {
         // tslint:disable-next-line: curly
         if (h && mouseType)
-            return mouseType === 'Hover' ? (colors.link_hover_bg as string) : (colors.link_drag_bg as string);
+            return mouseType === 'Hover' ? (colors.groupPanel_hover_bg as string) : (colors.groupPanel_bg as string);
         var c = shape.part.data.color;
         if (this.props.drager && this.props.drager.name) {
             return colors.groupPanel_bg;
@@ -424,7 +685,7 @@ class MyDiagram extends Component<MyDiagramProps> {
     private getGroupHeaderHighlightedColor = (h, shape): string => {
         // tslint:disable-next-line: curly
         if (h && mouseType)
-            return mouseType === 'Hover' ? (colors.link_hover_bg as string) : (colors.link_drag_bg as string);
+            return mouseType === 'Hover' ? (colors.groupHeader_bg as string) : (colors.hover_bg as string);
 
         if (this.props.drager && this.props.drager.name) {
             return colors.groupHeader_bg;
@@ -462,8 +723,8 @@ class MyDiagram extends Component<MyDiagramProps> {
      * @param obj
      */
     private mouseEnterHandler(e: go.InputEvent, obj: GraphObject): void {
-        mouseType = 'Hover';
-        this.props.setNodeHighlightHandler(obj);
+        // mouseType = 'Hover';
+        // this.props.setNodeHighlightHandler(obj);
     }
 
     /**
@@ -472,8 +733,8 @@ class MyDiagram extends Component<MyDiagramProps> {
      * @param obj
      */
     private mouseLeaveHandler(e: go.InputEvent, obj: GraphObject): void {
-        mouseType = '';
-        this.props.setNodeHighlightHandler(null);
+        // mouseType = '';
+        // this.props.setNodeHighlightHandler(null);
     }
 
     /**
@@ -482,8 +743,8 @@ class MyDiagram extends Component<MyDiagramProps> {
      * @param obj
      */
     private mouseDragEnterHandler(e: go.InputEvent, obj: GraphObject): void {
-        mouseType = 'Drag';
-        this.props.setNodeHighlightHandler(obj);
+        // mouseType = 'Drag';
+        // this.props.setNodeHighlightHandler(obj);
     }
 
     /**
@@ -492,8 +753,8 @@ class MyDiagram extends Component<MyDiagramProps> {
      * @param obj
      */
     private mouseDragLeaveHandler(e: go.InputEvent, obj: GraphObject, obj1: GraphObject): void {
-        mouseType = '';
-        this.props.setNodeHighlightHandler(null);
+        // mouseType = '';
+        // this.props.setNodeHighlightHandler(null);
     }
 
     /**
@@ -501,28 +762,24 @@ class MyDiagram extends Component<MyDiagramProps> {
      * @param e
      * @param obj
      */
-    private mouseDropHandler(e: go.InputEvent, obj: any): void {
+    private mouseDropHandler(e: go.InputEvent, obj: GraphObject): void {
         mouseType = '';
-        if (obj instanceof go.Link) {
-            // tslint:disable-next-line: no-any
-            let l = (obj as any)!.jb;
-            if (l) {
-                // this.props.linkDropedToHandler(l as WFLinkModel);
-                this.props.addNodeByDropLinkHandler({ eType: NodeEventType.Move2Link, toLink: l as WFLinkModel });
-            }
-        } else if (obj instanceof go.Group) {
-            // tslint:disable-next-line: no-any
-            let l = (obj as any)!.jb;
-            if (l) {
-                obj.expandSubGraph();
-                this.props.addNodeByDropNodeHandler({ eType: NodeEventType.Move2Group, toNode: l as WFNodeModel });
-            }
-        } else if (obj instanceof go.Node) {
-            // tslint:disable-next-line: no-any
-            let l = (obj as any)!.jb;
-            if (l) {
-                // this.props.nodeDropedToHandler(l.key as string);
-                this.props.addNodeByDropNodeHandler({ eType: NodeEventType.Move2Node, toNode: l as WFNodeModel });
+        if (obj && obj.part) {
+            if (obj instanceof go.Link) {
+                this.props.addNodeByDropLinkHandler({
+                    eType: NodeEventType.Move2Link,
+                    toLink: obj.part!.data as WFLinkModel
+                });
+            } else if (obj instanceof go.Group) {
+                this.props.addNodeByDropNodeHandler({
+                    eType: NodeEventType.Move2Group,
+                    toNode: obj.part!.data as WFNodeModel
+                });
+            } else if (obj instanceof go.Node) {
+                this.props.addNodeByDropNodeHandler({
+                    eType: NodeEventType.Move2Node,
+                    toNode: obj.part!.data as WFNodeModel
+                });
             }
         }
     }

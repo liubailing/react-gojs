@@ -219,16 +219,15 @@ class MyDiagram extends Component<MyDiagramProps> {
                     padding: new go.Margin(DiagramSetting.padding, 0, DiagramSetting.padding, 0),
                     minSize: new go.Size(DiagramSetting.nodeWith, DiagramSetting.nodeHeight)
                 },
-                new go.Binding('location'),
                 $(
                     go.Shape,
                     'RoundedRectangle',
                     {
                         strokeWidth: 0,
-                        stroke: colors.transparent
-                    },
-                    new go.Binding('fill', 'color'),
-                    new go.Binding('fill', 'isHighlighted', this.getHighlightedColor).ofObject() // binding source is Node.isHighlighted
+                        fill: colors.backgroud
+                    }
+                    //new go.Binding('fill', 'color'),
+                    //new go.Binding('fill', 'isHighlighted', this.getHighlightedColor).ofObject() // binding source is Node.isHighlighted
                 ),
                 $(
                     go.TextBlock,
@@ -370,14 +369,16 @@ class MyDiagram extends Component<MyDiagramProps> {
                     // when a group is expanded, if it contains no parts, generate a subGraph inside of it
                     subGraphExpandedChanged: function(group) {}
                 },
+
                 $(
                     go.Shape,
                     'RoundedRectangle',
                     {
                         stroke: colors.group_border,
-                        strokeWidth: 1
-                    },
-                    new go.Binding('fill', 'isHighlighted', this.getGroupHighlightedColor).ofObject() // binding source is Node.isHighlighted
+                        strokeWidth: 0.1,
+                        fill: colors.group_bg
+                    }
+                    //new go.Binding('fill', 'isHighlighted', this.getGroupHighlightedColor).ofObject() // binding source is Node.isHighlighted
                 ),
                 $(
                     go.Panel,
@@ -390,39 +391,33 @@ class MyDiagram extends Component<MyDiagramProps> {
                         go.Panel,
                         'Horizontal',
                         {
+                            padding: 5,
                             defaultAlignment: go.Spot.Top,
-                            stretch: go.GraphObject.Horizontal
+                            stretch: go.GraphObject.Horizontal,
+                            background: colors.group_bg
                         },
-                        new go.Binding('background', 'isHighlighted', this.getGroupHeaderHighlightedColor).ofObject(), // binding source is Node.isHighlighted
+                        //new go.Binding('background', 'isHighlighted', this.getGroupHeaderHighlightedColor).ofObject(), // binding source is Node.isHighlighted
                         // the SubGraphExpanderButton is a panel that functions as a button to expand or collapse the subGraph
                         $('SubGraphExpanderButton', {
-                            //padding: new go.Margin(0, 0, 5, 0),
-                            alignment: go.Spot.Right,
-                            margin: new go.Margin(0, 0, 0, 5)
+                            alignment: go.Spot.Center
                         }),
                         $(
                             go.TextBlock,
                             {
                                 font: DiagramSetting.groupFont,
                                 editable: true,
-                                stroke: colors.font,
-                                margin: new go.Margin(0, 10, 5, 10)
+                                stroke: colors.group_font,
+                                margin: new go.Margin(0, 0, 0, 10)
                             },
                             new go.Binding('text', 'label').makeTwoWay()
                         )
                     ),
                     // create a placeholder to represent the area where the contents of the group are
                     $(go.Placeholder, {
-                        padding: new go.Margin(15, 10),
-                        alignment: go.Spot.Center,
-                        minSize: new go.Size(DiagramSetting.groupWith, 0)
-                    }),
-                    $(go.TextBlock, {
-                        textAlign: 'center',
-                        alignment: go.Spot.Center,
-                        font: DiagramSetting.tipFont,
-                        stroke: colors.tip,
-                        text: DiagramSetting.groupTip
+                        background: colors.group_panel_bg,
+                        padding: new go.Margin(10, 15),
+                        alignment: go.Spot.TopLeft,
+                        minSize: new go.Size(DiagramSetting.ConditionWidth, 0)
                     })
                 ) // end Vertical Panel
             )
@@ -455,7 +450,7 @@ class MyDiagram extends Component<MyDiagramProps> {
                         layerSpacing: 20,
                         arrangementSpacing: new go.Size(10, 10)
                     }),
-                    padding: new go.Margin(5, 0, 5, 0),
+                    //padding: new go.Margin(5, 0, 5, 0),
                     movable: DiagramSetting.moveNode,
                     mouseEnter: this.mouseEnterHandler,
                     mouseLeave: this.mouseLeaveHandler,
@@ -473,13 +468,13 @@ class MyDiagram extends Component<MyDiagramProps> {
                 },
                 $(
                     go.Shape,
-                    'Rectangle',
+                    'RoundedRectangle',
                     {
                         stroke: colors.group_border,
-                        strokeWidth: 1
-                    },
-                    new go.Binding('fill', 'color'),
-                    new go.Binding('fill', 'isHighlighted', this.getGroupHighlightedColor).ofObject() // binding source is Node.isHighlighted
+                        strokeWidth: 0.1,
+                        fill: colors.group_bg
+                    }
+                    //new go.Binding('fill', 'isHighlighted', this.getGroupHighlightedColor).ofObject() // binding source is Node.isHighlighted
                 ),
                 $(
                     go.Panel,
@@ -492,30 +487,30 @@ class MyDiagram extends Component<MyDiagramProps> {
                         go.Panel,
                         'Horizontal',
                         {
-                            padding: new go.Margin(5, 0, 5, 0),
+                            padding: 5,
                             defaultAlignment: go.Spot.Top,
-                            stretch: go.GraphObject.Horizontal
+                            stretch: go.GraphObject.Horizontal,
+                            background: colors.group_bg
                         },
-                        new go.Binding('background', 'isHighlighted', this.getGroupHeaderHighlightedColor).ofObject(), // binding source is Node.isHighlighted
+                        //new go.Binding('background', 'isHighlighted', this.getGroupHeaderHighlightedColor).ofObject(), // binding source is Node.isHighlighted
                         // the SubGraphExpanderButton is a panel that functions as a button to expand or collapse the subGraph
                         $('SubGraphExpanderButton', {
-                            padding: new go.Margin(0, 0, 5, 0),
-                            alignment: go.Spot.Right,
-                            margin: new go.Margin(0, 0, 0, 5)
+                            alignment: go.Spot.Center
                         }),
                         $(
                             go.TextBlock,
                             {
                                 font: DiagramSetting.groupFont,
                                 editable: true,
-                                stroke: colors.font,
-                                margin: new go.Margin(0, 10, 5, 10)
+                                stroke: colors.group_font,
+                                margin: new go.Margin(0, 0, 0, 10)
                             },
                             new go.Binding('text', 'label').makeTwoWay()
                         )
                     ),
                     // create a placeholder to represent the area where the contents of the group are
                     $(go.Placeholder, {
+                        background: colors.group_panel_bg,
                         padding: new go.Margin(10, 15),
                         alignment: go.Spot.TopLeft,
                         minSize: new go.Size(DiagramSetting.ConditionWidth, 0)
@@ -526,7 +521,7 @@ class MyDiagram extends Component<MyDiagramProps> {
 
         //条件分支
         myDiagram.groupTemplateMap.add(
-            DiagramCategory.Condition,
+            DiagramCategory.ConditionSwitch,
             $(
                 go.Group,
                 'Auto',
@@ -555,17 +550,15 @@ class MyDiagram extends Component<MyDiagramProps> {
                     subGraphExpandedChanged: function(group) {}
                 },
 
-                new go.Binding('location', 'loc', go.Point.parse).makeTwoWay(go.Point.stringify),
-
                 $(
                     go.Shape,
-                    'Rectangle',
+                    'RoundedRectangle',
                     {
                         stroke: colors.group_border,
-                        strokeWidth: 1
-                    },
-                    new go.Binding('fill', 'color'),
-                    new go.Binding('fill', 'isHighlighted', this.getGroupHighlightedColor).ofObject() // binding source is Node.isHighlighted
+                        strokeWidth: 0.1,
+                        fill: colors.group_bg
+                    }
+                    //new go.Binding('fill', 'isHighlighted', this.getGroupHighlightedColor).ofObject() // binding source is Node.isHighlighted
                 ),
                 $(
                     go.Panel,
@@ -578,30 +571,30 @@ class MyDiagram extends Component<MyDiagramProps> {
                         go.Panel,
                         'Horizontal',
                         {
-                            padding: new go.Margin(5, 0, 5, 0),
+                            padding: 5,
                             defaultAlignment: go.Spot.Top,
-                            stretch: go.GraphObject.Horizontal
+                            stretch: go.GraphObject.Horizontal,
+                            background: colors.group_bg
                         },
-                        new go.Binding('background', 'isHighlighted', this.getGroupHeaderHighlightedColor).ofObject(), // binding source is Node.isHighlighted
+                        //new go.Binding('background', 'isHighlighted', this.getGroupHeaderHighlightedColor).ofObject(), // binding source is Node.isHighlighted
                         // the SubGraphExpanderButton is a panel that functions as a button to expand or collapse the subGraph
                         $('SubGraphExpanderButton', {
-                            padding: new go.Margin(0, 0, 5, 0),
-                            alignment: go.Spot.Right,
-                            margin: new go.Margin(0, 0, 0, 5)
+                            alignment: go.Spot.Center
                         }),
                         $(
                             go.TextBlock,
                             {
                                 font: DiagramSetting.groupFont,
                                 editable: true,
-                                stroke: colors.font,
-                                margin: new go.Margin(0, 10, 5, 10)
+                                stroke: colors.group_font,
+                                margin: new go.Margin(0, 0, 0, 10)
                             },
                             new go.Binding('text', 'label').makeTwoWay()
                         )
                     ),
                     // create a placeholder to represent the area where the contents of the group are
                     $(go.Placeholder, {
+                        background: colors.group_panel_bg,
                         padding: new go.Margin(10, 15),
                         alignment: go.Spot.TopLeft,
                         minSize: new go.Size(DiagramSetting.ConditionWidth, 0)
@@ -798,18 +791,18 @@ class MyDiagram extends Component<MyDiagramProps> {
     /**
      * 高亮选中
      */
-    private getHighlightedColor = (h, shape): string => {
-        // tslint:disable-next-line: curly
-        // if (h && mouseType) return mouseType === 'Hover' ? (colors.hover_bg as string) : (colors.drag_bg as string);
-        // console.log('高亮');
+    // private getHighlightedColor = (h, shape): string => {
+    //     // tslint:disable-next-line: curly
+    //     // if (h && mouseType) return mouseType === 'Hover' ? (colors.hover_bg as string) : (colors.drag_bg as string);
+    //     // console.log('高亮');
 
-        if (this.props.isHight && this.props!.hightNode!.eType === NodeEventType.HightLightNode) {
-            if (this.props!.hightNode!.toNode!.key === shape.part.key) return colors.drag_bg;
-        }
+    //     if (this.props.isHight && this.props!.hightNode!.eType === NodeEventType.HightLightNode) {
+    //         if (this.props!.hightNode!.toNode!.key === shape.part.key) return colors.drag_bg;
+    //     }
 
-        let c = shape.part.data.color;
-        return c ? c : colors.backgroud;
-    };
+    //     let c = shape.part.data.color;
+    //     return c ? c : colors.backgroud;
+    // };
 
     private getLinkHighlightedColor = (h, shape): string => {
         // tslint:disable-next-line: curly
@@ -827,29 +820,29 @@ class MyDiagram extends Component<MyDiagramProps> {
         return c ? c : colors.link;
     };
 
-    private getGroupHighlightedColor = (h, shape): string => {
-        // tslint:disable-next-line: curly
-        if (h && mouseType)
-            return mouseType === 'Hover' ? (colors.groupPanel_hover_bg as string) : (colors.groupPanel_bg as string);
-        // var c = shape.part.data.color;
-        if (this.props.drager && this.props.drager.name) {
-            return colors.groupPanel_bg;
-        }
+    // private getGroupHighlightedColor = (h, shape): string => {
+    //     // tslint:disable-next-line: curly
+    //     if (h && mouseType)
+    //         return mouseType === 'Hover' ? (colors.groupPanel_hover_bg as string) : (colors.group_panel_bg as string);
+    //     // var c = shape.part.data.color;
+    //     if (this.props.drager && this.props.drager.name) {
+    //         return colors.group_panel_bg;
+    //     }
 
-        return colors.groupPanel_bg;
-    };
+    //     return colors.group_panel_bg;
+    // };
 
-    private getGroupHeaderHighlightedColor = (h, shape): string => {
-        // tslint:disable-next-line: curly
-        if (h && mouseType)
-            return mouseType === 'Hover' ? (colors.groupHeader_bg as string) : (colors.hover_bg as string);
+    // private getGroupHeaderHighlightedColor = (h, shape): string => {
+    //     // tslint:disable-next-line: curly
+    //     if (h && mouseType)
+    //         return mouseType === 'Hover' ? (colors.groupHeader_bg as string) : (colors.hover_bg as string);
 
-        if (this.props.drager && this.props.drager.name) {
-            return colors.groupHeader_bg;
-        }
+    //     if (this.props.drager && this.props.drager.name) {
+    //         return colors.groupHeader_bg;
+    //     }
 
-        return colors.hover_bg;
-    };
+    //     return colors.hover_bg;
+    // };
 
     private getLinkPlusLineHighlightedColor = (h, shape): string => {
         // tslint:disable-next-line: curly
@@ -882,7 +875,7 @@ class MyDiagram extends Component<MyDiagramProps> {
     private mouseEnterHandler(e: go.InputEvent, obj: GraphObject): void {
         mouseType = 'Hover';
         if (obj instanceof go.Group) {
-            if (obj.part!.data!.category === 'CondtionNode')
+            if (obj.part!.data!.category === DiagramCategory.ConditionSwitch)
                 this.props.setNodeHighlightHandler({
                     eType: NodeEventType.HightLightCondition,
                     toNode: obj.part!.data as WFNodeModel
@@ -899,7 +892,7 @@ class MyDiagram extends Component<MyDiagramProps> {
         mouseType = '';
         // this.props.setNodeHighlightHandler(null);
         if (obj instanceof go.Group) {
-            if (obj.part!.data!.category === 'CondtionNode') this.props.clearNodeHighlightHander();
+            if (obj.part!.data!.category === DiagramCategory.ConditionSwitch) this.props.clearNodeHighlightHander();
         }
     }
 
@@ -929,25 +922,25 @@ class MyDiagram extends Component<MyDiagramProps> {
      * @param obj
      */
     private mouseDropHandler(e: go.InputEvent, obj: GraphObject): void {
-        mouseType = '';
-        if (obj && obj.part) {
-            if (obj instanceof go.Link) {
-                this.props.addNodeByDropLinkHandler({
-                    eType: NodeEventType.Move2Link,
-                    toLink: obj.part!.data as WFLinkModel
-                });
-            } else if (obj instanceof go.Group) {
-                this.props.addNodeByDropNodeHandler({
-                    eType: NodeEventType.Move2Group,
-                    toNode: obj.part!.data as WFNodeModel
-                });
-            } else if (obj instanceof go.Node) {
-                this.props.addNodeByDropNodeHandler({
-                    eType: NodeEventType.Move2Node,
-                    toNode: obj.part!.data as WFNodeModel
-                });
-            }
-        }
+        // mouseType = '';
+        // if (obj && obj.part) {
+        //     if (obj instanceof go.Link) {
+        //         this.props.addNodeByDropLinkHandler({
+        //             eType: NodeEventType.Move2Link,
+        //             toLink: obj.part!.data as WFLinkModel
+        //         });
+        //     } else if (obj instanceof go.Group) {
+        //         this.props.addNodeByDropNodeHandler({
+        //             eType: NodeEventType.Move2Group,
+        //             toNode: obj.part!.data as WFNodeModel
+        //         });
+        //     } else if (obj instanceof go.Node) {
+        //         this.props.addNodeByDropNodeHandler({
+        //             eType: NodeEventType.Move2Node,
+        //             toNode: obj.part!.data as WFNodeModel
+        //         });
+        //     }
+        // }
     }
 
     /**

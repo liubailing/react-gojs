@@ -18,49 +18,84 @@ import './wfNode.css';
 const getData = (): DiagramModel<WFNodeModel, WFLinkModel> => {
     const testData: DiagramModel<WFNodeModel, WFLinkModel> = {
         nodeDataArray: [
-            { key: 'Begin', label: '起始', wfType: 'start', group: '', isGroup: false },
+            { key: 'Begin', label: '起始', wfType: WFNodeType.Start as string, group: '', isGroup: false },
 
-            { key: 'condition1', label: '条件1', wfType: 'condition', group: '', isGroup: true, hasChild: true },
+            {
+                key: 'condition1',
+                label: '条件1',
+                wfType: WFNodeType.Condition as string,
+                group: '',
+                isGroup: true,
+                hasChild: true
+            },
             {
                 key: 'tioajian11',
                 label: '条件1 - 分支1',
-                wfType: 'conditionswitch',
+                wfType: WFNodeType.ConditionSwitch as string,
                 group: 'condition1',
                 isGroup: true,
                 hasChild: true
             },
-            { key: 'click1', label: '点击', wfType: 'mouseclick', group: 'tioajian11', isGroup: false },
-            { key: 'data', label: '提取数据', wfType: 'getdata', group: 'tioajian11', isGroup: false },
+            {
+                key: 'click1',
+                label: '点击',
+                wfType: WFNodeType.MouseClick as string,
+                group: 'tioajian11',
+                isGroup: false
+            },
+            { key: 'data', label: '提取数据', wfType: WFNodeType.Data as string, group: 'tioajian11', isGroup: false },
             {
                 key: 'tioajian12',
                 label: '条件1 - 分支2',
-                wfType: 'conditionswitch',
+                wfType: WFNodeType.ConditionSwitch as string,
                 group: 'condition1',
                 isGroup: true,
                 hasChild: false
             },
 
-            { key: 'loop1', label: '循环', wfType: 'loop', group: '', isGroup: true, hasChild: true },
-            { key: 'click2', label: '点击2', wfType: 'mouseclick', group: 'loop1', isGroup: false },
-
-            { key: 'condition2', label: '条件2', wfType: 'condition', group: 'loop1', isGroup: true, hasChild: true },
             {
-                key: 'condition21',
-                label: '条件2-1',
-                wfType: 'conditionswitch',
-                group: 'condition2',
+                key: 'loop1',
+                label: '循环',
+                wfType: WFNodeType.Loop as string,
+                group: '',
                 isGroup: true,
                 hasChild: true
             },
-            { key: 'condition22', label: '条件2-2', wfType: 'conditionswitch', group: 'condition2', isGroup: true },
+            { key: 'click2', label: '点击2', wfType: WFNodeType.MouseClick as string, group: 'loop1', isGroup: false },
 
-            { key: 'End', label: '', wfType: 'end', group: '', isGroup: false }
+            {
+                key: 'condition2',
+                label: '条件2',
+                wfType: WFNodeType.Condition as string,
+                group: 'loop1',
+                isGroup: true,
+                hasChild: true
+            },
+            {
+                key: 'condition21',
+                label: '条件2-1',
+                wfType: WFNodeType.ConditionSwitch as string,
+                group: 'condition2',
+                isGroup: true,
+                hasChild: true,
+                opacity: 0
+            },
+            {
+                key: 'condition22',
+                label: '条件2-2',
+                wfType: WFNodeType.ConditionSwitch as string,
+                group: 'condition2',
+                isGroup: true,
+                opacity: 0
+            },
+
+            { key: 'End', label: '', wfType: WFNodeType.End as string, group: '', isGroup: false }
         ],
         linkDataArray: [
             { from: 'Begin', to: 'condition1', group: '', isCondition: false },
-            { from: 'condition1', to: 'loop1', group: 'group0', isCondition: false },
-            { from: 'click1', to: 'data', group: 'group0', isCondition: false },
-            { from: 'click2', to: 'condition2', group: 'group0', isCondition: false },
+            { from: 'condition1', to: 'loop1', group: '', isCondition: false },
+            { from: 'click1', to: 'data', group: 'tioajian11', isCondition: false },
+            { from: 'click2', to: 'condition2', group: 'condition2', isCondition: false },
             { from: 'loop1', to: 'End', group: '', isCondition: false },
 
             /**比较特殊的 条件线 */
@@ -83,7 +118,6 @@ const getData = (): DiagramModel<WFNodeModel, WFLinkModel> => {
             case WFNodeType.Verify:
                 cate = DiagramCategory.WFNode;
                 break;
-
             case WFNodeType.Loop:
                 cate = DiagramCategory.LoopGroup;
                 break;
@@ -91,7 +125,7 @@ const getData = (): DiagramModel<WFNodeModel, WFLinkModel> => {
                 cate = DiagramCategory.ConditionGroup;
                 break;
             case WFNodeType.ConditionSwitch:
-                cate = DiagramCategory.Condition;
+                cate = DiagramCategory.ConditionSwitch;
                 break;
             case WFNodeType.Start:
                 cate = DiagramCategory.Start;
@@ -105,6 +139,7 @@ const getData = (): DiagramModel<WFNodeModel, WFLinkModel> => {
                 break;
         }
         x.category = cate;
+        x.opacity = 0;
         return x;
     });
 
@@ -129,43 +164,43 @@ export enum WFNodeType {
     /**
      * 打开网页
      */
-    OpenWeb = 'openweb',
+    OpenWeb = 'NavigateAction',
     /**
      * 点击元素
      */
-    MouseClick = 'mouseclick',
+    MouseClick = 'ClickAction',
     /**
      * 提取数据
      */
-    Data = 'data',
+    Data = 'ExtractDataAction',
     /**
      * 输入文字
      */
-    Input = 'input',
+    Input = 'EnterTextAction',
     /**
      * 识别验证码
      */
-    Verify = 'verify',
+    Verify = 'EnterCapachaAction',
     /**
      * 切换下拉选项
      */
-    Switch = 'switch',
+    Switch = 'SwitchCombo2Action',
     /**
      * 判断条件
      */
-    Condition = 'condition',
+    Condition = 'ConditionAction',
     /**
      * 判断条件 分支
      */
-    ConditionSwitch = 'conditionswitch',
+    ConditionSwitch = 'BranchAction',
     /**
      * 循环
      */
-    Loop = 'loop',
+    Loop = 'LoopAction',
     /**
      * 移动鼠标到元素上
      */
-    MouseHover = 'mousehover',
+    MouseHover = 'MouseOverAction',
     /**
      * 结束循环
      */

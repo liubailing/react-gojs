@@ -40,25 +40,30 @@ const randomKey = (len: number = 8): string => {
 export const colors = {
     start: '#69BE70',
     end: '#E06969',
-    hover_bg: '#5685d6',
-    drag_bg: 'red',
-    border: '#000',
-    backgroud: '#215ec8',
+
     font: '#fff',
+    border: '#6383BC',
+    backgroud: '#6383BC',
+
+    group_font: '#555',
+    group_border: '#EBEEF5',
+    group_bg: '#EBEEF5',
+    group_panel_bg: '#fff',
+
+    hover_bg: '#ddd',
+    drag_bg: '#ddd',
     hover_font: '#ddd',
-    group_border: '#215ec8',
-    groupHeader_bg: '#5685d6',
-    groupPanel_bg: '#fff',
+    groupHeader_bg: '#2b71ed',
     groupPanel_hover_bg: '#ddd',
-    group_backgroud: '#eee',
-    link_hover_bg: '#5685d6',
-    link_drag_bg: '#215ec8',
-    linkPlus_hover_bg: 'transparent',
-    linkPlus_drag_bg: '#215ec8',
-    link: '#9EA3AF',
-    icon_bg: '#5685d6',
-    icon: '#fff',
-    tip: '#333',
+    group_backgroud: '#ddd',
+    link_hover_bg: '#fff',
+    link_drag_bg: '#ddd',
+    linkPlus_hover_bg: 'ddd',
+    linkPlus_drag_bg: '#ddd',
+    link: '#ddd',
+    icon_bg: '#ddd',
+    icon: '#ddd',
+    tip: '#ddd',
     transparent: 'transparent'
 };
 
@@ -115,7 +120,7 @@ export const DiagramCategory = {
     // 条件连线
     ConditionLink: 'ConditionLink',
     // 条件
-    Condition: 'Condition',
+    ConditionSwitch: 'ConditionSwitch',
     // 起始
     Start: 'Start',
     // 结束
@@ -179,13 +184,13 @@ const getOneNode = (
             cate = DiagramCategory.WFNode;
             break;
         case WFNodeType.ConditionSwitch:
-            cate = DiagramCategory.Condition;
+            cate = DiagramCategory.ConditionSwitch;
             break;
         case WFNodeType.Loop:
             cate = DiagramCategory.LoopGroup;
             break;
         case WFNodeType.Condition:
-            cate = DiagramCategory.Condition;
+            cate = DiagramCategory.ConditionGroup;
             break;
         case WFNodeType.Start:
             cate = DiagramCategory.Start;
@@ -311,7 +316,7 @@ const addNodeBySelfHandler = (state: DiagramState, ev: NodeEvent): DiagramState 
     let ind = -1;
     let oldline: WFLinkModel;
     let link_Add: WFLinkModel[] = [];
-    let node = getOneNode(WFNodeType.Input, ev.toNode.label, ev.toNode.group, false, '', true);
+    let node = getOneNode(WFNodeType.ConditionSwitch, ev.toNode.label, ev.toNode.group, true, '', true);
     if (ev.eType === NodeEventType.AddPrvNode) {
         ind = state.model.linkDataArray.findIndex(x => x.to === ev.toNode!.key);
         if (ind < 0) {
@@ -350,8 +355,9 @@ const addNodeBySelfHandler = (state: DiagramState, ev: NodeEvent): DiagramState 
     // if (ev.eType === NodeEventType.AddNextNode) {
     //     state.model.nodeDataArray.splice(ind + 1, 0, node)
     // }
+
     link_Add.map(x => {
-        x.category = 'CondtionLink';
+        x.category = DiagramCategory.ConditionLink;
     });
 
     return {
@@ -402,20 +408,12 @@ const addNodeAfterDropNodeHandler = (state: DiagramState, ev: NodeEvent): Diagra
 
             if (isGroupArr.includes(state.drager.type)) {
                 node.isGroup = true;
-                node.color = colors.group_backgroud;
                 if (state.drager.type === WFNodeType.Condition) {
-                    node.isGroup = false;
+                    node.hasChild = true;
                     // 1.2 默认生成两个字条件
                     let n: WFNodeModel;
                     for (let i = 0; i < 2; i++) {
-                        n = getOneNode(
-                            WFNodeType.ConditionSwitch,
-                            state.drager.name,
-                            node.key,
-                            false,
-                            colors.group_backgroud,
-                            true
-                        );
+                        n = getOneNode(WFNodeType.ConditionSwitch, state.drager.name, node.key, true);
                         nodes_Con.push(n);
                     }
                     links_Con.push({
@@ -512,25 +510,17 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, ev: NodeEvent): Diagra
                 node.isGroup = true;
                 node.color = colors.group_backgroud;
                 if (state.drager.type === WFNodeType.Condition) {
-                    node.isGroup = false;
+                    node.hasChild = true;
 
-                    node.category = 'Condtion';
                     // 1.2 默认生成两个字条件
                     let n: WFNodeModel;
                     for (let i = 0; i < 2; i++) {
-                        n = getOneNode(
-                            WFNodeType.ConditionSwitch,
-                            state.drager.name,
-                            node.key,
-                            false,
-                            colors.group_backgroud,
-                            true
-                        );
+                        n = getOneNode(WFNodeType.ConditionSwitch, state.drager.name, node.key, true);
                         nodes_Con.push(n);
                     }
                     links_Con.push({
                         ...getLink(nodes_Con[0].key, nodes_Con[1].key, nodes_Con[1].group, true),
-                        ...{ category: 'CondtionLink' }
+                        ...{ category: DiagramCategory.ConditionLink }
                     });
                 }
             }
@@ -558,7 +548,7 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, ev: NodeEvent): Diagra
     linkToRemoveIndex = state.model.linkDataArray.findIndex(
         link => link.from === ev.toLink!.from && link.to === ev.toLink!.to
     );
-    console.log(linkToRemoveIndex + '12121212');
+
     return {
         ...state,
         drager: null,
@@ -746,7 +736,7 @@ const setNodeHighlightHandler = (state: DiagramState, ev: NodeEvent): DiagramSta
 
     if (ev.eType === NodeEventType.HightLightCondition && ev.toNode!.key) {
         state.model.nodeDataArray.map(x => {
-            if (x.key === ev.toNode!.key && x.category === 'CondtionNode') x.opacity = 1;
+            if (x.key === ev.toNode!.key && x.category === DiagramCategory.ConditionSwitch) x.opacity = 1;
             return x;
         });
 
@@ -781,7 +771,7 @@ const clearNodeHighlightHandler = (state: DiagramState): DiagramState => {
 
     state.model.nodeDataArray.map(x => {
         x.color = '';
-        if (x.category === 'CondtionNode') x.opacity = 0;
+        if (x.category === DiagramCategory.ConditionSwitch) x.opacity = 0;
         return x;
     });
     return {

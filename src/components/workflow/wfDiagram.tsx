@@ -65,7 +65,9 @@ const mapDispatchToProps = (
             switch (event.eventType) {
                 case ModelChangeEventType.Remove:
                     if (event.nodeData) {
-                        dispatch(removeNode(event.nodeData.key));
+                        dispatch(
+                            removeNode({ eType: NodeEventType.Delete, key: event.nodeData.key, newLinks: linksToAdd })
+                        );
                     }
                     if (event.linkData) {
                         dispatch(removeLink(event.linkData));
@@ -113,6 +115,7 @@ const mapDispatchToProps = (
 let mouseType = '';
 // let count = 0;
 let myDiagram: Diagram;
+let linksToAdd: WFLinkModel[] = [];
 
 class MyDiagram extends Component<MyDiagramProps> {
     constructor(props: MyDiagramProps) {
@@ -140,6 +143,7 @@ class MyDiagram extends Component<MyDiagramProps> {
     }
 
     private createDiagram(diagramId: string): Diagram {
+        const _this = this;
         const $ = go.GraphObject.make;
         myDiagram = $(go.Diagram, diagramId, {
             'undoManager.isEnabled': true,
@@ -159,6 +163,28 @@ class MyDiagram extends Component<MyDiagramProps> {
         myDiagram.toolManager.panningTool.isEnabled = false;
         myDiagram.toolManager.mouseWheelBehavior = ToolManager.WheelScroll;
 
+        myDiagram.nodeSelectionAdornmentTemplate = $(
+            go.Adornment,
+            'Auto',
+            $(go.Shape, {
+                fill: null,
+                stroke: '#fff',
+                strokeWidth: 1,
+                strokeDashArray: [2, 1]
+            }),
+            $(go.Placeholder)
+        );
+
+        // myDiagram.linkSelectionAdornmentTemplate = $(go.Adornment, "Auto",
+        //     $(go.Shape, {
+        //         fill: colors.drag_bg,
+        //         stroke: null,
+        //         strokeWidth: 1,
+        //         strokeDashArray: [1, 1]
+        //     }),
+        //     $(go.Placeholder)
+        // );
+
         myDiagram.nodeTemplate = $(
             go.Node,
             'Auto',
@@ -171,13 +197,13 @@ class MyDiagram extends Component<MyDiagramProps> {
                 locationSpot: go.Spot.Center, // the location is the center of the Shape
                 resizeObjectName: 'SHAPE', // user can resize the Shape
                 movable: DiagramSetting.moveNode,
-                // selectionChanged: node => {
-                //     console.log('selectionChanged');
-                //     this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
-                // },
+                selectionChanged: node => {
+                    this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
+                },
                 padding: new go.Margin(DiagramSetting.padding, 0, DiagramSetting.padding, 0),
                 minSize: new go.Size(160, 25)
             },
+
             new go.Binding('location'),
             $(
                 go.Shape,
@@ -277,10 +303,10 @@ class MyDiagram extends Component<MyDiagramProps> {
                     width: 22,
                     height: 22,
                     fill: colors.icon_bg,
-                    stroke: colors.hover_bg,
+                    stroke: colors.icon_bg,
                     strokeWidth: 1
                 }),
-                $(go.Shape, 'PlusLine', { width: 11, height: 11, fill: null, stroke: colors.hover_bg, strokeWidth: 2 }), //     new go.Binding('fill', 'color'),
+                $(go.Shape, 'PlusLine', { width: 11, height: 11, fill: null, stroke: colors.icon, strokeWidth: 2 }), //     new go.Binding('fill', 'color'),
                 new go.Binding('fill', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject(), // binding source is Node.isHighlighted
                 new go.Binding('stroke', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject(), // binding source is Node.isHighlighted
                 new go.Binding('opacity', 'isHighlighted', this.getLinkPlusLineHighlightedopacity).ofObject() // binding source is Node.isHighlighted
@@ -307,6 +333,9 @@ class MyDiagram extends Component<MyDiagramProps> {
                 mouseDragEnter: this.mouseDragEnterHandler,
                 mouseDragLeave: this.mouseDragLeaveHandler,
                 mouseDrop: this.mouseDropHandler,
+                selectionChanged: node => {
+                    this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
+                },
                 // the group begins unexpanded;
                 // upon expansion, a Diagram Listener will generate contents for the group
                 isSubGraphExpanded: true,
@@ -387,6 +416,9 @@ class MyDiagram extends Component<MyDiagramProps> {
                     mouseDragEnter: this.mouseDragEnterHandler,
                     mouseDragLeave: this.mouseDragLeaveHandler,
                     mouseDrop: this.mouseDropHandler,
+                    selectionChanged: node => {
+                        this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
+                    },
                     // the group begins unexpanded;
                     // upon expansion, a Diagram Listener will generate contents for the group
                     isSubGraphExpanded: true,
@@ -476,6 +508,9 @@ class MyDiagram extends Component<MyDiagramProps> {
                     mouseDragEnter: this.mouseDragEnterHandler,
                     mouseDragLeave: this.mouseDragLeaveHandler,
                     mouseDrop: this.mouseDropHandler,
+                    selectionChanged: node => {
+                        this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
+                    },
                     locationSpot: go.Spot.Center, // the location is the center of the Shape
                     // the group begins unexpanded;
                     // upon expansion, a Diagram Listener will generate contents for the group
@@ -538,6 +573,7 @@ class MyDiagram extends Component<MyDiagramProps> {
                 ), // end Vertical Panel
 
                 // output port
+
                 $(
                     go.Panel,
                     'Auto',
@@ -558,14 +594,14 @@ class MyDiagram extends Component<MyDiagramProps> {
                         width: 22,
                         height: 22,
                         fill: colors.icon_bg,
-                        stroke: colors.hover_bg,
+                        stroke: colors.icon_bg,
                         strokeWidth: 1
                     }),
                     $(go.Shape, 'PlusLine', {
                         width: 11,
                         height: 11,
                         fill: null,
-                        stroke: colors.hover_bg,
+                        stroke: colors.icon,
                         strokeWidth: 1
                     })
                 ),
@@ -589,14 +625,14 @@ class MyDiagram extends Component<MyDiagramProps> {
                         width: 22,
                         height: 22,
                         fill: colors.icon_bg,
-                        stroke: colors.hover_bg,
+                        stroke: colors.icon_bg,
                         strokeWidth: 1
                     }),
                     $(go.Shape, 'PlusLine', {
                         width: 11,
                         height: 11,
                         fill: null,
-                        stroke: colors.hover_bg,
+                        stroke: colors.icon,
                         strokeWidth: 1
                     })
                 )
@@ -657,6 +693,49 @@ class MyDiagram extends Component<MyDiagramProps> {
                 )
             )
         );
+
+        //notice whenever the selection may have changed
+        myDiagram.addDiagramListener('ChangedSelection', function(e: go.DiagramEvent) {
+            //_this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
+        });
+        // // notice when the Paste command may need to be reenabled
+        // myDiagram.addDiagramListener("ClipboardChanged", function (e: go.DiagramEvent) {
+        //     myDelete(e);
+        // });
+        // // notice whenever a transaction or undo/redo has occurred
+        // // myDiagram.addModelChangedListener(function(e) {
+        // //     if (e.isTransactionFinished) myDelete(e);
+        // // });
+
+        // const myDelete = (e: go.DiagramEvent) => {
+        //     console.log('---------------- delete --------------');
+        // }
+
+        myDiagram.commandHandler.doKeyDown = function() {
+            var e = myDiagram.lastInput;
+            // The meta (Command) key substitutes for "control" for Mac commands
+            var control = e.control || e.meta;
+            var key = e.key;
+            // Quit on any undo/redo key combination:
+            if (control && (key === 'Z' || key === 'Y')) return;
+            //将要删除
+            if (key === 'Del' && _this.props.currKey) {
+                // 这个节点 指向的
+                const indFrom = _this.props.model.linkDataArray.findIndex(link => link.from === _this.props.currKey);
+                // 指向这个节点
+                const indTo = _this.props.model.linkDataArray.findIndex(link => link.to === _this.props.currKey);
+
+                //节点  中间节点 、 起始节点 、 终止节点
+                if (indFrom > -1 && indTo > -1) {
+                    // 1、 中间节点
+                    let f = _this.props.model.linkDataArray[indTo];
+                    let t = _this.props.model.linkDataArray[indFrom];
+                    linksToAdd.push({ from: f.from, to: t.to, group: t.group, canDroped: true, category: t.category });
+                }
+            }
+            //call base method with no arguments (default functionality)
+            go.CommandHandler.prototype.doKeyDown.call(this);
+        };
 
         this.props.setDiagramHandler(myDiagram);
         return myDiagram;

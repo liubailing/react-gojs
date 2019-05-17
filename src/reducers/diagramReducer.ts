@@ -56,7 +56,8 @@ export const colors = {
     linkPlus_hover_bg: 'transparent',
     linkPlus_drag_bg: '#215ec8',
     link: '#9EA3AF',
-    icon_bg: '#fff',
+    icon_bg: '#5685d6',
+    icon: '#fff',
     transparent: 'transparent'
 };
 
@@ -140,20 +141,17 @@ const updateNodeColorHandler = (state: DiagramState, ev: NodeEvent): DiagramStat
         };
     });
 
-    const updatedLinks = state.model.linkDataArray.map(link => {
-        return {
-            ...link,
-            // color: ev.eType === NodeEventType.LinkHightLight?colors.link_hover_bg:colors.link
-            color: 'red',
-            canDroped: false
-        };
-    });
+    // const updatedLinks = state.model.linkDataArray.map(link => {
+    //     return {
+    //         ...link
+    //     };
+    // });
 
     return {
         ...state,
         model: {
-            nodeDataArray: updatedNodes,
-            linkDataArray: updatedLinks
+            ...state.model,
+            nodeDataArray: updatedNodes
         }
     };
 };
@@ -457,7 +455,7 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, ev: NodeEvent): Diagra
     linkToRemoveIndex = state.model.linkDataArray.findIndex(
         link => link.from === ev.toLink!.from && link.to === ev.toLink!.to
     );
-
+    console.log(linkToRemoveIndex + '12121212');
     return {
         ...state,
         drager: null,
@@ -484,19 +482,22 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, ev: NodeEvent): Diagra
  * @param state
  * @param payload
  */
-const removeNodeHandler = (state: DiagramState, payload: string): DiagramState => {
-    const nodeToRemoveIndex = state.model.nodeDataArray.findIndex(node => node.key === payload);
+const removeNodeHandler = (state: DiagramState, payload: NodeEvent): DiagramState => {
+    if (payload.eType != NodeEventType.Delete) return state;
+    const nodeToRemoveIndex = state.model.nodeDataArray.findIndex(node => node.key === payload.key);
     if (nodeToRemoveIndex === -1) {
         return state;
     }
     return {
         ...state,
         model: {
-            ...state.model,
             nodeDataArray: [
                 ...state.model.nodeDataArray.slice(0, nodeToRemoveIndex),
                 ...state.model.nodeDataArray.slice(nodeToRemoveIndex + 1)
-            ]
+            ],
+            linkDataArray: payload.newLinks
+                ? [...state.model.linkDataArray, ...payload.newLinks]
+                : state.model.linkDataArray
         }
     };
 };

@@ -58,6 +58,7 @@ export interface NodeEvent {
     toLink?: WFLinkModel;
     toNode?: WFNodeModel;
     newNodeToLink?: false;
+    newLinks?: WFLinkModel[];
 }
 
 export const init = actionCreator<DiagramModel<WFNodeModel, WFLinkModel>>('INIT');
@@ -78,7 +79,7 @@ export const addNodeBySelf = actionCreator<NodeEvent>('ADD_NODE_ClickSelf');
 //export const addNodeByDropGroup = actionCreator<string>('ADD_NODE_DropGroup');
 export const nodeSelected = actionCreator<string>('NODE_SELECTED');
 export const nodeDeselected = actionCreator<string>('NODE_DESELECTED');
-export const removeNode = actionCreator<string>('REMOVE_NODE');
+export const removeNode = actionCreator<NodeEvent>('REMOVE_NODE');
 // export const nodeDropedTo = actionCreator<string>('NODE_DropedTo');
 export const updateNodeColor = actionCreator<NodeEvent>('UPDATE_NODE_COLOR');
 export const UpdateNodeText = actionCreator<NodeEvent>('UPDATE_NODE_TEXT');

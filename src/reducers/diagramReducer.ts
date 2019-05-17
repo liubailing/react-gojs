@@ -221,7 +221,13 @@ const getOneNode = (
 
 const getLink = (from: string, to: string, group: string, isCondition: boolean): WFLinkModel => {
     if (!from || from === to) return { from: '', to: '', group: '', isCondition: false };
-    return { from: from, to: to, group: group, isCondition: isCondition };
+    return {
+        from: from,
+        to: to,
+        group: group,
+        isCondition: isCondition,
+        category: isCondition ? DiagramCategory.ConditionLink : DiagramCategory.WFLink
+    };
 };
 
 const initHandler = (state: DiagramState, payload: DiagramModel<WFNodeModel, WFLinkModel>): DiagramState => {

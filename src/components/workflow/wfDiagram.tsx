@@ -698,7 +698,7 @@ class MyDiagram extends Component<MyDiagramProps> {
                         height: DiagramSetting.startInWidth,
                         fill: colors.start,
                         strokeWidth: 0,
-                        margin: new go.Margin(0, 0, 0, 1)
+                        margin: new go.Margin(0, 0, 0, 2)
                     })
                 )
             )

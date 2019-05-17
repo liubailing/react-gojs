@@ -50,6 +50,11 @@ export const colors = {
     group_bg: '#EBEEF5',
     group_panel_bg: '#fff',
 
+    icon_bg: '#6383BC',
+    icon: '#fff',
+
+    link: '#9EA3AF',
+
     hover_bg: '#ddd',
     drag_bg: '#ddd',
     hover_font: '#ddd',
@@ -60,9 +65,7 @@ export const colors = {
     link_drag_bg: '#ddd',
     linkPlus_hover_bg: 'ddd',
     linkPlus_drag_bg: '#ddd',
-    link: '#ddd',
-    icon_bg: '#ddd',
-    icon: '#ddd',
+
     tip: '#ddd',
     transparent: 'transparent'
 };

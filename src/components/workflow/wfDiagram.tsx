@@ -285,7 +285,6 @@ class MyDiagram extends Component<MyDiagramProps> {
                     {
                         strokeWidth: 1
                     },
-                    new go.Binding('stroke', 'color'),
                     new go.Binding('stroke', 'isHighlighted', this.getLinkHighlightedColor).ofObject() // binding source is Node.isHighlighted
                 ),
 
@@ -294,9 +293,9 @@ class MyDiagram extends Component<MyDiagramProps> {
                     {
                         toArrow: 'Standard',
                         scale: 1.2,
-                        strokeWidth: 1
+                        strokeWidth: 0,
+                        fill: colors.link
                     },
-                    new go.Binding('fill', 'color'),
                     new go.Binding('stroke', 'isHighlighted', this.getLinkHighlightedColor).ofObject() // binding source is Node.isHighlighted
                 ),
                 $(
@@ -530,7 +529,8 @@ class MyDiagram extends Component<MyDiagramProps> {
                     layout: $(go.TreeLayout, {
                         angle: 90,
                         arrangement: go.TreeLayout.ArrangementHorizontal,
-                        isRealtime: false
+                        isRealtime: false,
+                        layerSpacing: DiagramSetting.layerSpacing
                     }),
                     movable: DiagramSetting.moveNode,
                     mouseEnter: this.mouseEnterHandler,
@@ -538,6 +538,7 @@ class MyDiagram extends Component<MyDiagramProps> {
                     mouseDragEnter: this.mouseDragEnterHandler,
                     mouseDragLeave: this.mouseDragLeaveHandler,
                     mouseDrop: this.mouseDropHandler,
+
                     selectionChanged: node => {
                         this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
                     },

@@ -1,6 +1,13 @@
 import React, { Component } from 'react';
-import go, { Diagram, ToolManager, GraphObject, Margin } from 'gojs';
-import { DiagramState, WFNodeModel, WFLinkModel, colors, DiagramSetting } from '../../reducers/diagramReducer';
+import go, { Diagram, ToolManager, GraphObject } from 'gojs';
+import {
+    DiagramState,
+    WFNodeModel,
+    WFLinkModel,
+    colors,
+    DiagramSetting,
+    DiagramCategory
+} from '../../reducers/diagramReducer';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
 import {
@@ -17,7 +24,8 @@ import {
     addNodeBySelf,
     addNodeByDropLink,
     addNodeByDropNode,
-    setNodeHighlight
+    setNodeHighlight,
+    clearNodeHighlight
 } from '../../actions/diagram';
 import { ModelChangeEvent, GojsDiagram, ModelChangeEventType } from 'react-gojs';
 import { Action } from 'typescript-fsa';
@@ -47,7 +55,8 @@ interface WFDroperDispatchProps {
     addNodeByDropLinkHandler: (ev: NodeEvent) => void;
     addNodeByDropNodeHandler: (ev: NodeEvent) => void;
     // tslint:disable-next-line: no-any
-    setNodeHighlightHandler: (node: any) => void;
+    setNodeHighlightHandler: (ev: NodeEvent) => void;
+    clearNodeHighlightHander: () => void;
 }
 
 const mapDispatchToProps = (
@@ -106,8 +115,11 @@ const mapDispatchToProps = (
         },
 
         // tslint:disable-next-line: no-any
-        setNodeHighlightHandler: (node: any) => {
-            if (node) dispatch(setNodeHighlight(node));
+        setNodeHighlightHandler: (ev: NodeEvent) => {
+            if (ev) dispatch(setNodeHighlight(ev));
+        },
+        clearNodeHighlightHander: () => {
+            dispatch(clearNodeHighlight());
         }
     };
 };
@@ -154,8 +166,7 @@ class MyDiagram extends Component<MyDiagramProps> {
                 angle: 90,
                 arrangement: go.TreeLayout.ArrangementVertical,
                 treeStyle: go.TreeLayout.StyleLayered,
-                nodeSpacing: 80,
-                layerSpacing: 40
+                layerSpacing: DiagramSetting.layerSpacing
             }),
             TextEdited: this.onTextEdited
         });
@@ -185,218 +196,253 @@ class MyDiagram extends Component<MyDiagramProps> {
         //     $(go.Placeholder)
         // );
 
-        myDiagram.nodeTemplate = $(
-            go.Node,
-            'Auto',
-            {
-                mouseEnter: this.mouseEnterHandler,
-                mouseLeave: this.mouseLeaveHandler,
-                mouseDragEnter: this.mouseDragEnterHandler,
-                mouseDragLeave: this.mouseDragLeaveHandler,
-                mouseDrop: this.mouseDropHandler,
-                locationSpot: go.Spot.Center, // the location is the center of the Shape
-                resizeObjectName: 'SHAPE', // user can resize the Shape
-                movable: DiagramSetting.moveNode,
-                selectionChanged: node => {
-                    this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
-                },
-                padding: new go.Margin(DiagramSetting.padding, 0, DiagramSetting.padding, 0),
-                minSize: new go.Size(160, 25)
-            },
-
-            new go.Binding('location'),
-            $(
-                go.Shape,
-                'RoundedRectangle',
-                {
-                    strokeWidth: 0,
-                    stroke: colors.transparent
-                },
-                new go.Binding('fill', 'color'),
-                new go.Binding('fill', 'isHighlighted', this.getHighlightedColor).ofObject() // binding source is Node.isHighlighted
-            ),
-            $(
-                go.TextBlock,
-                {
-                    editable: true,
-                    stroke: colors.font,
-                    font: '16px Sans-Serif'
-                },
-                new go.Binding('text', 'label')
-            )
-        );
-
-        // This is the template for a label node on a link: just an Ellipse.
-        // This node supports user-drawn links to and from the label node.
+        /**
+         * 画节点
+         */
         myDiagram.nodeTemplateMap.add(
-            'LinkLabel',
+            DiagramCategory.WFNode,
             $(
-                'Node',
-                {
-                    selectable: true,
-                    avoidable: false,
-                    layerName: 'Foreground'
-                }, // always have link label nodes in front of Links
-                $('Shape', 'Ellipse', {
-                    width: 5,
-                    height: 5,
-                    stroke: null,
-                    portId: '',
-                    fromLinkable: true,
-                    toLinkable: true,
-                    cursor: 'pointer'
-                })
-            )
-        );
-
-        myDiagram.linkTemplate = $(
-            go.Link,
-            {
-                mouseEnter: this.mouseEnterHandler,
-                mouseLeave: this.mouseLeaveHandler,
-                mouseDragEnter: this.mouseDragEnterHandler,
-                mouseDragLeave: this.mouseDragLeaveHandler,
-                mouseDrop: this.mouseDropHandler,
-                movable: false,
-                deletable: false,
-                margin: new Margin(100, 0, 100, 0)
-            },
-            new go.Binding('location'),
-            $(
-                go.Shape,
-                {
-                    strokeWidth: 1
-                },
-                new go.Binding('stroke', 'color'),
-                new go.Binding('stroke', 'isHighlighted', this.getLinkHighlightedColor).ofObject() // binding source is Node.isHighlighted
-            ),
-
-            $(
-                go.Shape,
-                {
-                    toArrow: 'Standard',
-                    scale: 1.2,
-                    strokeWidth: 1
-                },
-                new go.Binding('fill', 'color'),
-                new go.Binding('stroke', 'isHighlighted', this.getLinkHighlightedColor).ofObject() // binding source is Node.isHighlighted
-            ),
-            $(
-                go.Shape,
-                'Rectangle',
-                {
-                    width: 80,
-                    height: 42,
-                    opacity: 0
-                },
-                new go.Binding('fill', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject(), // binding source is Node.isHighlighted
-                new go.Binding('stroke', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject() // binding source is Node.isHighlighted
-            ),
-            $(
-                go.Panel,
+                go.Node,
                 'Auto',
                 {
-                    padding: new go.Margin(0, 0, 10, 0),
-                    alignment: go.Spot.Top
+                    mouseEnter: this.mouseEnterHandler,
+                    mouseLeave: this.mouseLeaveHandler,
+                    mouseDragEnter: this.mouseDragEnterHandler,
+                    mouseDragLeave: this.mouseDragLeaveHandler,
+                    mouseDrop: this.mouseDropHandler,
+                    locationSpot: go.Spot.Center, // the location is the center of the Shape
+                    resizeObjectName: 'SHAPE', // user can resize the Shape
+                    movable: DiagramSetting.moveNode,
+                    selectionChanged: node => {
+                        this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
+                    },
+                    padding: new go.Margin(DiagramSetting.padding, 0, DiagramSetting.padding, 0),
+                    minSize: new go.Size(DiagramSetting.nodeWith, DiagramSetting.nodeHeight)
                 },
-                $(go.Shape, 'Circle', {
-                    width: 22,
-                    height: 22,
-                    fill: colors.icon_bg,
-                    stroke: colors.icon_bg,
-                    strokeWidth: 1
-                }),
-                $(go.Shape, 'PlusLine', { width: 11, height: 11, fill: null, stroke: colors.icon, strokeWidth: 2 }), //     new go.Binding('fill', 'color'),
-                new go.Binding('fill', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject(), // binding source is Node.isHighlighted
-                new go.Binding('stroke', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject(), // binding source is Node.isHighlighted
-                new go.Binding('opacity', 'isHighlighted', this.getLinkPlusLineHighlightedopacity).ofObject() // binding source is Node.isHighlighted
+                new go.Binding('location'),
+                $(
+                    go.Shape,
+                    'RoundedRectangle',
+                    {
+                        strokeWidth: 0,
+                        stroke: colors.transparent
+                    },
+                    new go.Binding('fill', 'color'),
+                    new go.Binding('fill', 'isHighlighted', this.getHighlightedColor).ofObject() // binding source is Node.isHighlighted
+                ),
+                $(
+                    go.TextBlock,
+                    {
+                        editable: true,
+                        stroke: colors.font,
+                        font: DiagramSetting.font
+                    },
+                    new go.Binding('text', 'label')
+                )
             )
         );
 
-        // define the group template
-        myDiagram.groupTemplate = $(
-            go.Group,
-            'Auto',
-            {
-                // define the group's internal layout
-                layout: $(go.TreeLayout, {
-                    angle: 90,
-                    arrangement: go.TreeLayout.ArrangementHorizontal,
-                    isRealtime: false,
-                    layerSpacing: 40,
-                    arrangementSpacing: new go.Size(30, 10)
-                }),
-                padding: new go.Margin(DiagramSetting.padding, 0, DiagramSetting.padding, 0),
-                movable: DiagramSetting.moveNode,
-                mouseEnter: this.mouseEnterHandler,
-                mouseLeave: this.mouseLeaveHandler,
-                mouseDragEnter: this.mouseDragEnterHandler,
-                mouseDragLeave: this.mouseDragLeaveHandler,
-                mouseDrop: this.mouseDropHandler,
-                selectionChanged: node => {
-                    this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
-                },
-                // the group begins unexpanded;
-                // upon expansion, a Diagram Listener will generate contents for the group
-                isSubGraphExpanded: true,
-                // when a group is expanded, if it contains no parts, generate a subGraph inside of it
-                subGraphExpandedChanged: function(group) {}
-            },
+        // // This is the template for a label node on a link: just an Ellipse.
+        // // This node supports user-drawn links to and from the label node.
+        // myDiagram.nodeTemplateMap.add(
+        //     'LinkLabel',
+        //     $(
+        //         'Node',
+        //         {
+        //             selectable: true,
+        //             avoidable: false,
+        //             layerName: 'Foreground'
+        //         }, // always have link label nodes in front of Links
+        //         $('Shape', 'Ellipse', {
+        //             width: 5,
+        //             height: 5,
+        //             stroke: null,
+        //             portId: '',
+        //             fromLinkable: true,
+        //             toLinkable: true
+        //         })
+        //     )
+        // );
+
+        /**
+         * 划线
+         */
+        myDiagram.linkTemplateMap.add(
+            DiagramCategory.WFLink,
             $(
-                go.Shape,
-                'Rectangle',
+                go.Link,
                 {
-                    stroke: colors.group_border,
-                    strokeWidth: 1
+                    mouseEnter: this.mouseEnterHandler,
+                    mouseLeave: this.mouseLeaveHandler,
+                    mouseDragEnter: this.mouseDragEnterHandler,
+                    mouseDragLeave: this.mouseDragLeaveHandler,
+                    mouseDrop: this.mouseDropHandler,
+                    movable: false,
+                    deletable: false
                 },
-                new go.Binding('fill', 'color'),
-                new go.Binding('fill', 'isHighlighted', this.getGroupHighlightedColor).ofObject() // binding source is Node.isHighlighted
-            ),
-            $(
-                go.Panel,
-                'Vertical',
-                {
-                    stretch: go.GraphObject.Horizontal,
-                    defaultAlignment: go.Spot.Left
-                },
+                new go.Binding('location'),
+                $(
+                    go.Shape,
+                    {
+                        strokeWidth: 1
+                    },
+                    new go.Binding('stroke', 'color'),
+                    new go.Binding('stroke', 'isHighlighted', this.getLinkHighlightedColor).ofObject() // binding source is Node.isHighlighted
+                ),
+
+                $(
+                    go.Shape,
+                    {
+                        toArrow: 'Standard',
+                        scale: 1.2,
+                        strokeWidth: 1
+                    },
+                    new go.Binding('fill', 'color'),
+                    new go.Binding('stroke', 'isHighlighted', this.getLinkHighlightedColor).ofObject() // binding source is Node.isHighlighted
+                ),
+                $(
+                    go.Shape,
+                    'Rectangle',
+                    {
+                        width: DiagramSetting.nodeWith / 2,
+                        height: DiagramSetting.layerSpacing + 5,
+                        opacity: DiagramSetting.linkOpacity
+                    },
+                    new go.Binding('fill', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject(), // binding source is Node.isHighlighted
+                    new go.Binding('stroke', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject() // binding source is Node.isHighlighted
+                ),
                 $(
                     go.Panel,
-                    'Horizontal',
+                    'Auto',
                     {
-                        padding: new go.Margin(5, 0, 5, 0),
-                        defaultAlignment: go.Spot.Top,
-                        stretch: go.GraphObject.Horizontal
+                        padding: new go.Margin(0, 0, 10, 0),
+                        alignment: go.Spot.Top
                     },
-                    new go.Binding('background', 'isHighlighted', this.getGroupHeaderHighlightedColor).ofObject(), // binding source is Node.isHighlighted
-                    // the SubGraphExpanderButton is a panel that functions as a button to expand or collapse the subGraph
-                    $('SubGraphExpanderButton', {
-                        padding: new go.Margin(0, 0, 5, 0),
-                        alignment: go.Spot.Right,
-                        margin: new go.Margin(0, 0, 0, 5)
+                    $(go.Shape, 'Circle', {
+                        width: DiagramSetting.iconWidth,
+                        height: DiagramSetting.iconWidth,
+                        fill: colors.icon_bg,
+                        stroke: colors.icon_bg,
+                        strokeWidth: 1
                     }),
-                    $(
-                        go.TextBlock,
-                        {
-                            font: 'Bold 16px Sans-Serif',
-                            editable: true,
-                            stroke: colors.font,
-                            margin: new go.Margin(0, 10, 5, 10)
-                        },
-                        new go.Binding('text', 'label').makeTwoWay()
-                    )
+                    $(go.Shape, 'PlusLine', {
+                        width: DiagramSetting.iconInWidth,
+                        height: DiagramSetting.iconInWidth,
+                        fill: null,
+                        stroke: colors.icon,
+                        strokeWidth: 2
+                    }), //     new go.Binding('fill', 'color'),
+                    new go.Binding('fill', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject(), // binding source is Node.isHighlighted
+                    new go.Binding('stroke', 'isHighlighted', this.getLinkPlusLineHighlightedColor).ofObject(), // binding source is Node.isHighlighted
+                    new go.Binding('opacity', 'isHighlighted', this.getLinkPlusLineHighlightedopacity).ofObject() // binding source is Node.isHighlighted
+                )
+            )
+        );
+
+        // 划循环分组
+        myDiagram.groupTemplateMap.add(
+            DiagramCategory.LoopGroup,
+            $(
+                go.Group,
+                'Auto',
+                {
+                    // define the group's internal layout
+                    layout: $(go.TreeLayout, {
+                        angle: 90,
+                        arrangement: go.TreeLayout.ArrangementHorizontal,
+                        isRealtime: false,
+                        layerSpacing: DiagramSetting.layerSpacing,
+                        arrangementSpacing: new go.Size(30, 10)
+                    }),
+                    padding: new go.Margin(DiagramSetting.padding, 0, DiagramSetting.padding, 0),
+                    movable: DiagramSetting.moveNode,
+                    mouseEnter: this.mouseEnterHandler,
+                    mouseLeave: this.mouseLeaveHandler,
+                    mouseDragEnter: this.mouseDragEnterHandler,
+                    mouseDragLeave: this.mouseDragLeaveHandler,
+                    mouseDrop: this.mouseDropHandler,
+                    selectionChanged: node => {
+                        this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
+                    },
+                    // the group begins unexpanded;
+                    // upon expansion, a Diagram Listener will generate contents for the group
+                    isSubGraphExpanded: true,
+                    // when a group is expanded, if it contains no parts, generate a subGraph inside of it
+                    subGraphExpandedChanged: function(group) {}
+                },
+                $(
+                    go.Shape,
+                    'RoundedRectangle',
+                    {
+                        stroke: colors.group_border,
+                        strokeWidth: 1
+                    },
+                    new go.Binding('fill', 'isHighlighted', this.getGroupHighlightedColor).ofObject() // binding source is Node.isHighlighted
                 ),
-                // create a placeholder to represent the area where the contents of the group are
-                $(go.Placeholder, {
-                    padding: new go.Margin(10, 15),
-                    alignment: go.Spot.TopLeft,
-                    minSize: new go.Size(100, 15)
-                })
-            ) // end Vertical Panel
+                $(
+                    go.Panel,
+                    'Vertical',
+                    {
+                        stretch: go.GraphObject.Horizontal,
+                        defaultAlignment: go.Spot.Left
+                    },
+                    $(
+                        go.Panel,
+                        'Horizontal',
+                        {
+                            defaultAlignment: go.Spot.Top,
+                            stretch: go.GraphObject.Horizontal
+                        },
+                        new go.Binding('background', 'isHighlighted', this.getGroupHeaderHighlightedColor).ofObject(), // binding source is Node.isHighlighted
+                        // the SubGraphExpanderButton is a panel that functions as a button to expand or collapse the subGraph
+                        $('SubGraphExpanderButton', {
+                            //padding: new go.Margin(0, 0, 5, 0),
+                            alignment: go.Spot.Right,
+                            margin: new go.Margin(0, 0, 0, 5)
+                        }),
+                        $(
+                            go.TextBlock,
+                            {
+                                font: DiagramSetting.groupFont,
+                                editable: true,
+                                stroke: colors.font,
+                                margin: new go.Margin(0, 10, 5, 10)
+                            },
+                            new go.Binding('text', 'label').makeTwoWay()
+                        )
+                    ),
+                    // create a placeholder to represent the area where the contents of the group are
+                    $(go.Placeholder, {
+                        padding: new go.Margin(15, 10),
+                        alignment: go.Spot.Center,
+                        minSize: new go.Size(DiagramSetting.groupWith, 0)
+                    }),
+                    $(go.TextBlock, {
+                        textAlign: 'center',
+                        alignment: go.Spot.Center,
+                        font: DiagramSetting.tipFont,
+                        stroke: colors.tip,
+                        text: DiagramSetting.groupTip
+                    })
+                ) // end Vertical Panel
+            )
         ); // end Group
 
-        // use a special template for the center node
-        myDiagram.nodeTemplateMap.add(
-            'Condtion',
+        //
+        //条件线
+        myDiagram.linkTemplateMap.add(
+            DiagramCategory.ConditionLink,
+            $(go.Link, 'Auto', {
+                selectable: false,
+                movable: false,
+                deletable: false,
+                opacity: 0
+            })
+        );
+
+        // 条件分组
+        myDiagram.groupTemplateMap.add(
+            DiagramCategory.ConditionGroup,
             $(
                 go.Group,
                 'Auto',
@@ -460,7 +506,7 @@ class MyDiagram extends Component<MyDiagramProps> {
                         $(
                             go.TextBlock,
                             {
-                                font: 'Bold 16px Sans-Serif',
+                                font: DiagramSetting.groupFont,
                                 editable: true,
                                 stroke: colors.font,
                                 margin: new go.Margin(0, 10, 5, 10)
@@ -472,26 +518,15 @@ class MyDiagram extends Component<MyDiagramProps> {
                     $(go.Placeholder, {
                         padding: new go.Margin(10, 15),
                         alignment: go.Spot.TopLeft,
-                        minSize: new go.Size(100, 15)
+                        minSize: new go.Size(DiagramSetting.ConditionWidth, 0)
                     })
                 ) // end Vertical Panel
             )
         ); // end Group
 
-        //
-
-        myDiagram.linkTemplateMap.add(
-            'CondtionLink',
-            $(go.Link, 'Auto', {
-                selectable: false,
-                movable: false,
-                deletable: false,
-                opacity: 0
-            })
-        );
-
-        myDiagram.nodeTemplateMap.add(
-            'CondtionNode',
+        //条件分支
+        myDiagram.groupTemplateMap.add(
+            DiagramCategory.Condition,
             $(
                 go.Group,
                 'Auto',
@@ -511,6 +546,7 @@ class MyDiagram extends Component<MyDiagramProps> {
                     selectionChanged: node => {
                         this.props.onNodeSelectionHandler(node.key as string, node.isSelected as boolean);
                     },
+
                     locationSpot: go.Spot.Center, // the location is the center of the Shape
                     // the group begins unexpanded;
                     // upon expansion, a Diagram Listener will generate contents for the group
@@ -556,7 +592,7 @@ class MyDiagram extends Component<MyDiagramProps> {
                         $(
                             go.TextBlock,
                             {
-                                font: 'Bold 16px Sans-Serif',
+                                font: DiagramSetting.groupFont,
                                 editable: true,
                                 stroke: colors.font,
                                 margin: new go.Margin(0, 10, 5, 10)
@@ -568,43 +604,10 @@ class MyDiagram extends Component<MyDiagramProps> {
                     $(go.Placeholder, {
                         padding: new go.Margin(10, 15),
                         alignment: go.Spot.TopLeft,
-                        minSize: new go.Size(200, 50)
+                        minSize: new go.Size(DiagramSetting.ConditionWidth, 0)
                     })
                 ), // end Vertical Panel
 
-                // output port
-
-                $(
-                    go.Panel,
-                    'Auto',
-                    {
-                        alignment: go.Spot.Right,
-                        margin: new go.Margin(20, 0, 0, 1),
-                        portId: 'from',
-                        fromLinkable: false,
-                        cursor: 'pointer',
-                        click: (e: go.InputEvent, thisObj: GraphObject) => {
-                            this.props.addNodeBySelfHandler({
-                                eType: NodeEventType.AddNextNode,
-                                toNode: thisObj.part!.data as WFNodeModel
-                            });
-                        }
-                    },
-                    $(go.Shape, 'Circle', {
-                        width: 22,
-                        height: 22,
-                        fill: colors.icon_bg,
-                        stroke: colors.icon_bg,
-                        strokeWidth: 1
-                    }),
-                    $(go.Shape, 'PlusLine', {
-                        width: 11,
-                        height: 11,
-                        fill: null,
-                        stroke: colors.icon,
-                        strokeWidth: 1
-                    })
-                ),
                 // input port
                 $(
                     go.Panel,
@@ -621,16 +624,50 @@ class MyDiagram extends Component<MyDiagramProps> {
                             });
                         }
                     },
+                    new go.Binding('opacity', 'opacity'),
                     $(go.Shape, 'Circle', {
-                        width: 22,
-                        height: 22,
+                        width: DiagramSetting.iconWidth,
+                        height: DiagramSetting.iconWidth,
                         fill: colors.icon_bg,
                         stroke: colors.icon_bg,
                         strokeWidth: 1
                     }),
                     $(go.Shape, 'PlusLine', {
-                        width: 11,
-                        height: 11,
+                        width: DiagramSetting.iconInWidth,
+                        height: DiagramSetting.iconInWidth,
+                        fill: null,
+                        stroke: colors.icon,
+                        strokeWidth: 1
+                    })
+                ),
+                // output port
+                $(
+                    go.Panel,
+                    'Auto',
+                    {
+                        alignment: go.Spot.Right,
+                        margin: new go.Margin(20, 0, 0, 1),
+                        portId: 'from',
+                        fromLinkable: false,
+                        cursor: 'pointer',
+                        click: (e: go.InputEvent, thisObj: GraphObject) => {
+                            this.props.addNodeBySelfHandler({
+                                eType: NodeEventType.AddNextNode,
+                                toNode: thisObj.part!.data as WFNodeModel
+                            });
+                        }
+                    },
+                    new go.Binding('opacity', 'opacity'),
+                    $(go.Shape, 'Circle', {
+                        width: DiagramSetting.iconWidth,
+                        height: DiagramSetting.iconWidth,
+                        fill: colors.icon_bg,
+                        stroke: colors.icon_bg,
+                        strokeWidth: 1
+                    }),
+                    $(go.Shape, 'PlusLine', {
+                        width: DiagramSetting.iconInWidth,
+                        height: DiagramSetting.iconInWidth,
                         fill: null,
                         stroke: colors.icon,
                         strokeWidth: 1
@@ -639,8 +676,11 @@ class MyDiagram extends Component<MyDiagramProps> {
             )
         );
 
+        /**
+         * 起始点
+         */
         myDiagram.nodeTemplateMap.add(
-            'Start',
+            DiagramCategory.Start,
             $(
                 go.Node,
                 'Panel',
@@ -654,24 +694,27 @@ class MyDiagram extends Component<MyDiagramProps> {
                     go.Panel,
                     'Auto',
                     $(go.Shape, 'Circle', {
-                        minSize: new go.Size(44, 44),
+                        minSize: new go.Size(DiagramSetting.startWidth, DiagramSetting.startWidth),
                         fill: null,
                         stroke: colors.start,
                         strokeWidth: 1
                     }),
                     $(go.Shape, 'TriangleRight', {
-                        width: 19,
-                        height: 19,
+                        width: DiagramSetting.startInWidth,
+                        height: DiagramSetting.startInWidth,
                         fill: colors.start,
                         strokeWidth: 0,
-                        margin: new go.Margin(0, 0, 0, 3)
+                        margin: new go.Margin(0, 0, 0, 1)
                     })
                 )
             )
         );
 
+        /**
+         * 结束点
+         */
         myDiagram.nodeTemplateMap.add(
-            'End',
+            DiagramCategory.End,
             $(
                 go.Node,
                 'Panel',
@@ -684,12 +727,17 @@ class MyDiagram extends Component<MyDiagramProps> {
                     go.Panel,
                     'Auto',
                     $(go.Shape, 'Circle', {
-                        minSize: new go.Size(40, 40),
+                        minSize: new go.Size(DiagramSetting.endWidth, DiagramSetting.endWidth),
                         fill: null,
                         stroke: colors.end,
                         strokeWidth: 1
                     }),
-                    $(go.Shape, 'Rectangle', { width: 18, height: 18, fill: colors.end, strokeWidth: 0 })
+                    $(go.Shape, 'Rectangle', {
+                        width: DiagramSetting.endInWidth,
+                        height: DiagramSetting.endInWidth,
+                        fill: colors.end,
+                        strokeWidth: 0
+                    })
                 )
             )
         );
@@ -730,7 +778,13 @@ class MyDiagram extends Component<MyDiagramProps> {
                     // 1、 中间节点
                     let f = _this.props.model.linkDataArray[indTo];
                     let t = _this.props.model.linkDataArray[indFrom];
-                    linksToAdd.push({ from: f.from, to: t.to, group: t.group, canDroped: true, category: t.category });
+                    linksToAdd.push({
+                        from: f.from,
+                        to: t.to,
+                        group: t.group,
+                        category: t.category,
+                        isCondition: false
+                    });
                 }
             }
             //call base method with no arguments (default functionality)
@@ -826,8 +880,14 @@ class MyDiagram extends Component<MyDiagramProps> {
      * @param obj
      */
     private mouseEnterHandler(e: go.InputEvent, obj: GraphObject): void {
-        // mouseType = 'Hover';
-        // this.props.setNodeHighlightHandler(obj);
+        mouseType = 'Hover';
+        if (obj instanceof go.Group) {
+            if (obj.part!.data!.category === 'CondtionNode')
+                this.props.setNodeHighlightHandler({
+                    eType: NodeEventType.HightLightCondition,
+                    toNode: obj.part!.data as WFNodeModel
+                });
+        }
     }
 
     /**
@@ -836,8 +896,11 @@ class MyDiagram extends Component<MyDiagramProps> {
      * @param obj
      */
     private mouseLeaveHandler(e: go.InputEvent, obj: GraphObject): void {
-        // mouseType = '';
+        mouseType = '';
         // this.props.setNodeHighlightHandler(null);
+        if (obj instanceof go.Group) {
+            if (obj.part!.data!.category === 'CondtionNode') this.props.clearNodeHighlightHander();
+        }
     }
 
     /**

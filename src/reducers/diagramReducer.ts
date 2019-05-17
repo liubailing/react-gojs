@@ -46,7 +46,7 @@ export const colors = {
     backgroud: '#215ec8',
     font: '#fff',
     hover_font: '#ddd',
-    group_border: '#000',
+    group_border: '#215ec8',
     groupHeader_bg: '#5685d6',
     groupPanel_bg: '#fff',
     groupPanel_hover_bg: '#ddd',
@@ -58,14 +58,32 @@ export const colors = {
     link: '#9EA3AF',
     icon_bg: '#5685d6',
     icon: '#fff',
+    tip: '#333',
     transparent: 'transparent'
 };
 
 export const DiagramSetting = {
+    font: '14px Sans-Serif',
+    groupFont: '14px Sans-Serif',
+    tipFont: 'bold 14px Sans-Serif',
+    groupTip: '将要执行的流程拖放在此处',
     moveNode: false,
     moveGroup: false,
-    padding: 2
+    padding: 2,
+    layerSpacing: 30,
+    startWidth: 20,
+    startInWidth: 10,
+    endWidth: 20,
+    endInWidth: 10,
+    iconWidth: 14,
+    iconInWidth: 7,
+    nodeWith: 120,
+    nodeHeight: 25,
+    groupWith: 160,
+    ConditionWidth: 140,
+    linkOpacity: 0
 };
+
 const isGroupArr: WFNodeType[] = [WFNodeType.Condition, WFNodeType.Loop];
 
 /**
@@ -82,43 +100,120 @@ export interface DiagramState {
     isHight: boolean;
 }
 
-export interface WFLinkModel extends LinkModel {
-    group: string;
-    canDroped?: boolean;
-    color?: string;
-    category?: string;
+/**
+ * 图形分类
+ */
+export const DiagramCategory = {
+    //节点
+    WFNode: 'WFNode',
+    // 线
+    WFLink: 'WFLink',
+    // 循环分组
+    LoopGroup: 'LoopGroup',
+    // 条件组
+    ConditionGroup: 'ConditionGroup',
+    // 条件连线
+    ConditionLink: 'ConditionLink',
+    // 条件
+    Condition: 'Condition',
+    // 起始
+    Start: 'Start',
+    // 结束
+    End: 'End'
+};
+
+/**
+ * 图形节点属性
+ */
+export interface WFNodeModel extends BaseNodeModel {
+    key: string; //唯一标识ID
+
+    label: string; //步骤名称
+    group: string; // 所在分组
+    wfType: string; // 节点  类型  WFNodeType
+    isGroup: boolean; // 是否是组
+
+    hasChild?: boolean; // 是否有子步骤    当 isGroup == true ,必须给 hasChild赋值
+    data?: any; // 对应的配置属性  交互使用的数据
+
+    //以下属性不用管
+    category?: string; // 图形分类      对应 DiagramCategory     WFNode | LoopGroup | ConditionGroup | Condition | Start | End
+    color?: string; //
+    opacity?: number; //
 }
 
-export interface WFNodeModel extends BaseNodeModel {
-    label: string;
-    group: string;
-    isGroup: boolean;
+/**
+ * 连线对应的属性
+ */
+export interface WFLinkModel extends LinkModel {
+    from: string; // 连线起始点
+    to: string; // 连线结束点
+
+    group: string; // 所在分组
+    isCondition; //是否是在条件分支的连线  这个比较特殊 ****
+
+    //以下属性不用管
+    category?: string; // 图形分类      对应 DiagramCategory 里面的    WFLink | ConditionLink
     color?: string;
-    canDroped?: boolean;
-    category?: string;
 }
 
 const getOneNode = (
+    wfType: WFNodeType,
     payload: string,
     group: string = '',
     isGroup: boolean = false,
     color: string = '',
     isCond: boolean = false
 ): WFNodeModel => {
+    var cate = DiagramCategory.WFNode;
+    switch (wfType) {
+        case WFNodeType.Data:
+        case WFNodeType.SubEnd:
+        case WFNodeType.Input:
+        case WFNodeType.LoopBreak:
+        case WFNodeType.MouseClick:
+        case WFNodeType.MouseHover:
+        case WFNodeType.OpenWeb:
+        case WFNodeType.Switch:
+        case WFNodeType.Verify:
+            cate = DiagramCategory.WFNode;
+            break;
+        case WFNodeType.ConditionSwitch:
+            cate = DiagramCategory.Condition;
+            break;
+        case WFNodeType.Loop:
+            cate = DiagramCategory.LoopGroup;
+            break;
+        case WFNodeType.Condition:
+            cate = DiagramCategory.Condition;
+            break;
+        case WFNodeType.Start:
+            cate = DiagramCategory.Start;
+            break;
+        case WFNodeType.End:
+            cate = DiagramCategory.End;
+            break;
+
+        default:
+            cate = DiagramCategory.WFNode;
+            break;
+    }
     return {
         key: randomKey(),
         label: payload,
+        wfType: wfType,
         group: group,
         isGroup: isGroup,
-        canDroped: false,
+        hasChild: false,
         color: color,
-        category: isCond ? 'CondtionNode' : ''
+        opacity: 0,
+        category: cate
     };
 };
 
-const getLink = (from: string, to: string, group: string): WFLinkModel => {
-    if (from === to) return { from: '', to: '', group: '' };
-    return { from: from, to: to, group: group, canDroped: true, color: '' };
+const getLink = (from: string, to: string, group: string, isCondition: boolean): WFLinkModel => {
+    if (!from || from === to) return { from: '', to: '', group: '', isCondition: false };
+    return { from: from, to: to, group: group, isCondition: isCondition };
 };
 
 const initHandler = (state: DiagramState, payload: DiagramModel<WFNodeModel, WFLinkModel>): DiagramState => {
@@ -140,12 +235,6 @@ const updateNodeColorHandler = (state: DiagramState, ev: NodeEvent): DiagramStat
             color: ev.eType === NodeEventType.LinkHightLight ? colors.group_backgroud : colors.hover_bg
         };
     });
-
-    // const updatedLinks = state.model.linkDataArray.map(link => {
-    //     return {
-    //         ...link
-    //     };
-    // });
 
     return {
         ...state,
@@ -194,13 +283,13 @@ const updateNodeTextHandler = (state: DiagramState, payload: NodeEvent): Diagram
  */
 const addNodeHandler = (state: DiagramState, payload: string): DiagramState => {
     const linksToAdd: WFLinkModel[] = state.selectedNodeKeys.map(parent => {
-        return { from: parent, to: payload, group: '' };
+        return { from: parent, to: payload, group: '', isCondition: false };
     });
     return {
         ...state,
         model: {
             ...state.model,
-            nodeDataArray: [...state.model.nodeDataArray, getOneNode(payload)],
+            nodeDataArray: [...state.model.nodeDataArray, getOneNode(WFNodeType.Data, payload)],
             linkDataArray:
                 linksToAdd.length > 0
                     ? [...state.model.linkDataArray].concat(linksToAdd)
@@ -222,11 +311,11 @@ const addNodeBySelfHandler = (state: DiagramState, ev: NodeEvent): DiagramState 
     let ind = -1;
     let oldline: WFLinkModel;
     let link_Add: WFLinkModel[] = [];
-    let node = getOneNode(`${ev.toNode.label}`, ev.toNode.group, false, '', true);
+    let node = getOneNode(WFNodeType.Input, ev.toNode.label, ev.toNode.group, false, '', true);
     if (ev.eType === NodeEventType.AddPrvNode) {
         ind = state.model.linkDataArray.findIndex(x => x.to === ev.toNode!.key);
         if (ind < 0) {
-            link_Add.push(getLink(node.key, ev.toNode!.key, ev.toNode!.group));
+            link_Add.push(getLink(node.key, ev.toNode!.key, ev.toNode!.group, true));
         } else {
             // oldline = state.model.linkDataArray[ind];
             // link_Add = [getLink(oldline.from,node.key,ev.toNode!.group),getLink(node.key,oldline.to,ev.toNode!.group)]
@@ -234,14 +323,17 @@ const addNodeBySelfHandler = (state: DiagramState, ev: NodeEvent): DiagramState 
     } else {
         ind = state.model.linkDataArray.findIndex(x => x.from === ev.toNode!.key);
         if (ind < 0) {
-            link_Add.push(getLink(ev.toNode!.key, node.key, ev.toNode!.group));
+            link_Add.push(getLink(ev.toNode!.key, node.key, ev.toNode!.group, true));
         } else {
         }
     }
 
     if (ind > -1) {
         oldline = state.model.linkDataArray[ind];
-        link_Add = [getLink(oldline.from, node.key, ev.toNode!.group), getLink(node.key, oldline.to, ev.toNode!.group)];
+        link_Add = [
+            getLink(oldline.from, node.key, ev.toNode!.group, true),
+            getLink(node.key, oldline.to, ev.toNode!.group, true)
+        ];
     }
 
     // const ind = state.model.nodeDataArray.findIndex(x => x.key === ev.toNode!.key);
@@ -302,7 +394,7 @@ const addNodeAfterDropNodeHandler = (state: DiagramState, ev: NodeEvent): Diagra
                 return state;
             }
 
-            node = getOneNode(state.drager.name, ev.toNode.group);
+            node = getOneNode(state.drager.type, state.drager.name, ev.toNode.group);
             if (ev.eType === NodeEventType.Drag2Group) {
                 node.group = ev.toNode.key;
                 linkAction = false;
@@ -313,17 +405,21 @@ const addNodeAfterDropNodeHandler = (state: DiagramState, ev: NodeEvent): Diagra
                 node.color = colors.group_backgroud;
                 if (state.drager.type === WFNodeType.Condition) {
                     node.isGroup = false;
-
-                    node.category = 'Condtion';
                     // 1.2 默认生成两个字条件
                     let n: WFNodeModel;
                     for (let i = 0; i < 2; i++) {
-                        n = getOneNode(state.drager.name, node.key, false, colors.group_backgroud, true);
+                        n = getOneNode(
+                            WFNodeType.ConditionSwitch,
+                            state.drager.name,
+                            node.key,
+                            false,
+                            colors.group_backgroud,
+                            true
+                        );
                         nodes_Con.push(n);
                     }
                     links_Con.push({
-                        ...getLink(nodes_Con[0].key, nodes_Con[1].key, nodes_Con[1].group),
-                        ...{ category: 'CondtionLink' }
+                        ...getLink(nodes_Con[0].key, nodes_Con[1].key, nodes_Con[1].group, true)
                     });
                 }
             }
@@ -359,10 +455,10 @@ const addNodeAfterDropNodeHandler = (state: DiagramState, ev: NodeEvent): Diagra
 
         // 3、新增的两条线
         if (linkToRemoveIndex > -1) {
-            linksToAdd.push(getLink(oldLink!.from, node.key, oldLink!.group));
-            linksToAdd.push(getLink(node.key, oldLink!.to, oldLink!.group));
+            linksToAdd.push(getLink(oldLink!.from, node.key, oldLink!.group, false));
+            linksToAdd.push(getLink(node.key, oldLink!.to, oldLink!.group, false));
         } else {
-            linksToAdd.push(getLink(ev.toNode!.key, node.key, ev.toNode!.group));
+            linksToAdd.push(getLink(ev.toNode!.key, node.key, ev.toNode!.group, false));
         }
     }
 
@@ -411,7 +507,7 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, ev: NodeEvent): Diagra
             if (!state.drager) {
                 return state;
             }
-            node = getOneNode(state.drager.name, ev.toLink.group);
+            node = getOneNode(state.drager.type, state.drager.name, ev.toLink.group);
             if (isGroupArr.includes(state.drager.type)) {
                 node.isGroup = true;
                 node.color = colors.group_backgroud;
@@ -422,11 +518,18 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, ev: NodeEvent): Diagra
                     // 1.2 默认生成两个字条件
                     let n: WFNodeModel;
                     for (let i = 0; i < 2; i++) {
-                        n = getOneNode(state.drager.name, node.key, false, colors.group_backgroud, true);
+                        n = getOneNode(
+                            WFNodeType.ConditionSwitch,
+                            state.drager.name,
+                            node.key,
+                            false,
+                            colors.group_backgroud,
+                            true
+                        );
                         nodes_Con.push(n);
                     }
                     links_Con.push({
-                        ...getLink(nodes_Con[0].key, nodes_Con[1].key, nodes_Con[1].group),
+                        ...getLink(nodes_Con[0].key, nodes_Con[1].key, nodes_Con[1].group, true),
                         ...{ category: 'CondtionLink' }
                     });
                 }
@@ -450,8 +553,8 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, ev: NodeEvent): Diagra
     // 3、新增的两条线
     const linksToAdd: WFLinkModel[] = [];
 
-    linksToAdd.push(getLink(ev.toLink.from, node.key, ev.toLink.group));
-    linksToAdd.push(getLink(node.key, ev.toLink.to, ev.toLink.group));
+    linksToAdd.push(getLink(ev.toLink.from, node.key, ev.toLink.group, false));
+    linksToAdd.push(getLink(node.key, ev.toLink.to, ev.toLink.group, false));
     linkToRemoveIndex = state.model.linkDataArray.findIndex(
         link => link.from === ev.toLink!.from && link.to === ev.toLink!.to
     );
@@ -641,6 +744,20 @@ const setNodeHighlightHandler = (state: DiagramState, ev: NodeEvent): DiagramSta
         };
     }
 
+    if (ev.eType === NodeEventType.HightLightCondition && ev.toNode!.key) {
+        state.model.nodeDataArray.map(x => {
+            if (x.key === ev.toNode!.key && x.category === 'CondtionNode') x.opacity = 1;
+            return x;
+        });
+
+        return {
+            ...state,
+            model: {
+                ...state.model
+            }
+        };
+    }
+
     return {
         ...state,
         isHight: true,
@@ -662,15 +779,15 @@ const clearNodeHighlightHandler = (state: DiagramState): DiagramState => {
     // state.diagram.commitTransaction('highlight');
     // state.diagram.skipsUndoManager = oldskips;
 
-    var nodes = state.model.nodeDataArray.map(x => {
+    state.model.nodeDataArray.map(x => {
         x.color = '';
+        if (x.category === 'CondtionNode') x.opacity = 0;
         return x;
     });
     return {
         ...state,
         model: {
-            nodeDataArray: { ...nodes },
-            linkDataArray: state.model.linkDataArray
+            ...state.model
         },
         hightNode: null,
         isHight: false
@@ -678,12 +795,12 @@ const clearNodeHighlightHandler = (state: DiagramState): DiagramState => {
 };
 
 const getModel = () => {
-    let s = getOneNode('');
-    let n = getOneNode('');
+    let s = getOneNode(WFNodeType.Start, '');
+    let n = getOneNode(WFNodeType.End, '');
 
     return {
         nodeDataArray: [{ ...s, ...{ category: 'Start' } }, { ...n, ...{ category: 'End' } }],
-        linkDataArray: [{ ...getLink(s.key, n.key, ''), ...{ lenth: 500 } }]
+        linkDataArray: [{ ...getLink(s.key, n.key, '', false), ...{ length: 500 } }]
     };
 };
 

@@ -44,7 +44,8 @@ export enum NodeEventType {
     AddNextNode = 'Add_Next_Node',
     HightLightLink = 'HightLight_Link',
     HightLightNode = 'HightLight_Node',
-    HightLightGroup = 'HightLight_group'
+    HightLightGroup = 'HightLight_group',
+    HightLightCondition = 'HightLight_Condition'
 }
 
 /**

@@ -254,6 +254,7 @@ const WFDroper: React.FC<WFDroperProps> = ({
                                 eType: NodeEventType.Drag2Group,
                                 toNode: curnode.part!.data as WFNodeModel
                             });
+                            if (!curnode.wasTreeExpanded) curnode.expandSubGraph();
                             console.log('-------------------Group ----------------');
                         } else if (curnode instanceof go.Node) {
                             addNodeByDropNodeHandler({

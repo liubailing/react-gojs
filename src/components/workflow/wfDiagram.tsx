@@ -579,7 +579,7 @@ class MyDiagram extends Component<MyDiagramProps> {
                         // when a group is expanded, if it contains no parts, generate a subGraph inside of it
                         subGraphExpandedChanged: function(group) {
                             //debugger;
-                            console.log(group.subGraph.isSubGraphExpanded);
+                            //console.log(group.subGraph.)
                         }
                     },
                     new go.Binding('location', 'loc', go.Point.parse).makeTwoWay(go.Point.stringify),

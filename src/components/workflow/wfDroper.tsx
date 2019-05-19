@@ -1,6 +1,6 @@
 import React from 'react';
 import './wfDiagram.css';
-import { DiagramState, WFNodeModel, WFLinkModel } from '../../reducers/diagramReducer';
+import { DiagramState, WFNodeModel, WFLinkModel, colors, DiagramCategory } from '../../reducers/diagramReducer';
 import { connect } from 'react-redux';
 import WFDiagram from './wfDiagram';
 import { Action } from 'typescript-fsa';
@@ -10,8 +10,8 @@ import {
     NodeEvent,
     NodeEventType,
     addNodeByDropLink,
-    addNodeByDropNode,
-    setNodeHighlight
+    addNodeByDropNode
+    // setNodeHighlight
 } from '../../actions/diagram';
 
 interface WFDroperProps extends WFDroperDispatchProps, DiagramState {}
@@ -24,7 +24,7 @@ const mapStateToProps = (state: DiagramState) => {
 };
 
 interface WFDroperDispatchProps {
-    setNodeHighlightHandler: (node: NodeEvent) => void;
+    //setNodeHighlightHandler: (node: NodeEvent) => void;
     addNodeByDropLinkHandler: (ev: NodeEvent) => void;
     addNodeByDropNodeHandler: (ev: NodeEvent) => void;
 }
@@ -33,9 +33,9 @@ const mapDispatchToProps = (
     dispatch: Dispatch<Action<string | null> | Action<WFLinkModel> | Action<NodeEvent>>
 ): WFDroperDispatchProps => {
     return {
-        setNodeHighlightHandler: (node: NodeEvent) => {
-            dispatch(setNodeHighlight(node));
-        },
+        // setNodeHighlightHandler: (node: NodeEvent) => {
+        //     dispatch(setNodeHighlight(node));
+        // },
         addNodeByDropLinkHandler: (ev: NodeEvent) => {
             dispatch(addNodeByDropLink(ev));
         },
@@ -45,10 +45,64 @@ const mapDispatchToProps = (
     };
 };
 
+let oldLink: any;
+let oldGroup: any;
+let oldNode: any;
+const groups = [DiagramCategory.LoopGroup, DiagramCategory.ConditionGroup, DiagramCategory.ConditionSwitch];
+
+const ClearDragerWithout = (str: string) => {
+    if (str !== 'l' && oldLink instanceof go.Link) {
+        var node = (oldLink as any).part;
+        if (node && node.category == DiagramCategory.WFLink && node.diagram) {
+            node.diagram.startTransaction('Change color');
+
+            let btn = node.findObject('btn_add');
+            if (btn) {
+                btn.fill = colors.link_icon_bg;
+            }
+            node.diagram.commitTransaction('Change color');
+        }
+        oldLink = null;
+    }
+
+    if (str !== 'g' && oldGroup instanceof go.Group) {
+        let node = (oldGroup as any).part;
+        if (groups.includes(node.category)) {
+            // node.diagram.startTransaction("Change color");
+
+            // let shape = node.findObject("group_Body");
+            // if (shape)  shape.fill = colors.group_bg;
+
+            // let top = node.findObject("group_Top");
+            // if (top) top.background = colors.group_bg;
+
+            // let title = node.findObject("group_Title");
+            // if (title) title.stroke = colors.group_font;
+
+            // node.diagram.commitTransaction("Change color");
+
+            oldGroup = null;
+        }
+    }
+
+    if (str !== 'n' && oldNode instanceof go.Node) {
+        let node = (oldNode as any).part;
+        if (node.category == DiagramCategory.WFNode) {
+            node.diagram.startTransaction('Change color');
+
+            let shape = node.findObject('node_Body');
+            if (shape) shape.fill = colors.backgroud;
+
+            node.diagram.commitTransaction('Change color');
+        }
+        oldNode = null;
+    }
+};
+
 const WFDroper: React.FC<WFDroperProps> = ({
     drager,
     diagram,
-    setNodeHighlightHandler,
+    //setNodeHighlightHandler,
     addNodeByDropLinkHandler,
     addNodeByDropNodeHandler
 }) => {
@@ -98,22 +152,67 @@ const WFDroper: React.FC<WFDroperProps> = ({
 
                     if (curnode && curnode.part) {
                         if (curnode instanceof go.Link) {
-                            setNodeHighlightHandler({
-                                eType: NodeEventType.HightLightLink,
-                                toLink: curnode.part!.data
-                            });
+                            var node = (curnode as any).part;
+                            if (node.category === DiagramCategory.WFLink) {
+                                node.diagram.startTransaction('Change color');
+
+                                let btn = node.findObject('btn_add');
+                                if (btn) {
+                                    btn.fill = colors.link_highlight;
+                                }
+
+                                node.diagram.commitTransaction('Change color');
+                                // setNodeHighlightHandler({
+                                //     eType: NodeEventType.HightLightLink,
+                                //     toLink: curnode.part!.data
+                                // });
+
+                                oldLink = curnode;
+                                ClearDragerWithout('l');
+                            }
                         } else if (curnode instanceof go.Group) {
-                            setNodeHighlightHandler({
-                                eType: NodeEventType.HightLightGroup,
-                                toNode: curnode.part!.data
-                            });
+                            // setNodeHighlightHandler({
+                            //     eType: NodeEventType.HightLightGroup,
+                            //     toNode: curnode.part!.data
+                            // });
+                            var node = (curnode as any).part;
+                            if (groups.includes(node.category)) {
+                                // node.diagram.startTransaction("Change color");
+
+                                // var shape = node.findObject("group_Body");
+                                // if (shape === null) return;
+
+                                // shape.fill = colors.group_highlight;
+                                // var top = node.findObject("group_Top");
+                                // if (top) top.background = colors.group_highlight;
+
+                                // var title = node.findObject("group_Title");
+                                // if (title) title.stroke = colors.group_highlight_font;
+
+                                // node.diagram.commitTransaction("Change color");
+                                oldGroup = curnode;
+                                ClearDragerWithout('g');
+                            }
                         } else if (curnode instanceof go.Node) {
-                            console.log('-------------------Group ----------------');
-                            setNodeHighlightHandler({
-                                eType: NodeEventType.HightLightNode,
-                                toNode: curnode.part!.data
-                            });
+                            //console.log('-------------------Group ----------------');
+                            // setNodeHighlightHandler({
+                            //     eType: NodeEventType.HightLightNode,
+                            //     toNode: curnode.part!.data
+                            // });
+                            let node = (curnode as any).part;
+                            if (node.category === DiagramCategory.WFNode) {
+                                node.diagram.startTransaction('Change color');
+
+                                let nbody = node.findObject('node_Body');
+                                if (nbody) nbody.fill = colors.highlight;
+
+                                node.diagram.commitTransaction('Change color');
+                                oldNode = curnode;
+                                ClearDragerWithout('n');
+                            }
                         }
+                    } else {
+                        ClearDragerWithout('');
                     }
                 }
             }}
@@ -143,6 +242,7 @@ const WFDroper: React.FC<WFDroperProps> = ({
                     var point = myDiagram.transformViewToDoc(new go.Point(mx, my));
                     var curnode: any = myDiagram.findPartAt(point, true);
 
+                    ClearDragerWithout('');
                     if (curnode && curnode.part) {
                         if (curnode instanceof go.Link) {
                             addNodeByDropLinkHandler({

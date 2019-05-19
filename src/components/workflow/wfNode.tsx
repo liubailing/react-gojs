@@ -21,18 +21,26 @@ const getData = (): DiagramModel<WFNodeModel, WFLinkModel> => {
             { key: 'Begin', label: '起始', wfType: WFNodeType.Start as string, group: '', isGroup: false },
 
             {
-                key: 'condition1',
+                key: 'condition0',
                 label: '条件1',
                 wfType: WFNodeType.Condition as string,
                 group: '',
                 isGroup: true,
                 hasChild: true
             },
+            // {
+            //     key: 'condition1',
+            //     label: '条件1',
+            //     wfType: WFNodeType.Data as string,
+            //     group: 'condition0',
+            //     isGroup: false,
+            //     hasChild: true
+            // },
             {
-                key: 'tioajian11',
-                label: '条件1 - 分支1',
+                key: '1',
+                label: '1',
                 wfType: WFNodeType.ConditionSwitch as string,
-                group: 'condition1',
+                group: 'condition0',
                 isGroup: true,
                 hasChild: true
             },
@@ -40,15 +48,15 @@ const getData = (): DiagramModel<WFNodeModel, WFLinkModel> => {
                 key: 'click1',
                 label: '点击',
                 wfType: WFNodeType.MouseClick as string,
-                group: 'tioajian11',
+                group: '1',
                 isGroup: false
             },
-            { key: 'data', label: '提取数据', wfType: WFNodeType.Data as string, group: 'tioajian11', isGroup: false },
+            { key: 'data', label: '提取数据', wfType: WFNodeType.Data as string, group: '1', isGroup: false },
             {
-                key: 'tioajian12',
-                label: '条件1 - 分支2',
+                key: '2',
+                label: '22',
                 wfType: WFNodeType.ConditionSwitch as string,
-                group: 'condition1',
+                group: 'condition0',
                 isGroup: true,
                 hasChild: false
             },
@@ -81,6 +89,20 @@ const getData = (): DiagramModel<WFNodeModel, WFLinkModel> => {
                 opacity: 0
             },
             {
+                key: 'click4',
+                label: '点击4',
+                wfType: WFNodeType.MouseClick as string,
+                group: 'condition22',
+                isGroup: false
+            },
+            {
+                key: 'data1',
+                label: '提取数据',
+                wfType: WFNodeType.Data as string,
+                group: 'condition22',
+                isGroup: false
+            },
+            {
                 key: 'condition22',
                 label: '条件2-2',
                 wfType: WFNodeType.ConditionSwitch as string,
@@ -88,19 +110,54 @@ const getData = (): DiagramModel<WFNodeModel, WFLinkModel> => {
                 isGroup: true,
                 opacity: 0
             },
+            { key: 'click3', label: '点击3', wfType: WFNodeType.MouseClick as string, group: '', isGroup: false },
 
-            { key: 'End', label: '', wfType: WFNodeType.End as string, group: '', isGroup: false }
+            { key: 'End', label: '', wfType: WFNodeType.End as string, group: '', isGroup: false },
+            {
+                key: '5',
+                label: '55555',
+                wfType: WFNodeType.ConditionSwitch as string,
+                group: 'condition0',
+                isGroup: true,
+                hasChild: false
+            },
+            {
+                key: '4',
+                label: '4444',
+                wfType: WFNodeType.ConditionSwitch as string,
+                group: 'condition0',
+                isGroup: true,
+                hasChild: false
+            },
+            {
+                key: '3',
+                label: '333',
+                wfType: WFNodeType.ConditionSwitch as string,
+                group: 'condition0',
+                isGroup: true,
+                hasChild: false
+            }
         ],
         linkDataArray: [
-            { from: 'Begin', to: 'condition1', group: '', isCondition: false },
-            { from: 'condition1', to: 'loop1', group: '', isCondition: false },
-            { from: 'click1', to: 'data', group: 'tioajian11', isCondition: false },
-            { from: 'click2', to: 'condition2', group: 'condition2', isCondition: false },
-            { from: 'loop1', to: 'End', group: '', isCondition: false },
+            { from: 'Begin', to: 'condition0', group: '', isCondition: false },
+            { from: 'condition0', to: 'loop1', group: '', isCondition: false },
+            { from: 'click1', to: 'data', group: '1', isCondition: false },
+            { from: 'click2', to: 'condition2', group: 'loop1', isCondition: false },
+            { from: 'loop1', to: 'click3', group: '', isCondition: false },
+            { from: 'click4', to: 'data1', group: '', isCondition: false },
+            { from: 'click3', to: 'End', group: '', isCondition: false },
 
+            { from: '1', to: '2', group: 'condition1', isCondition: true, fromSpot: 'TopRight', toSpot: 'TopLeft' },
+            { from: '2', to: '3', group: 'condition1', isCondition: true, fromSpot: 'TopRight', toSpot: 'TopLeft' },
+            { from: '3', to: '4', group: 'condition1', isCondition: true, fromSpot: 'TopRight', toSpot: 'TopLeft' },
+            { from: '4', to: '5', group: 'condition1', isCondition: true, fromSpot: 'TopRight', toSpot: 'TopLeft' },
+            //{ from: 'test3', to: 'test4', group: 'condition1', isCondition: true },
             /**比较特殊的 条件线 */
-            { from: 'tioajian11', to: 'tioajian12', group: 'condition1', isCondition: true },
-            { from: 'condition21', to: 'condition21', group: 'condition2', isCondition: true }
+            // { from: 'tioajian11', to: 'tioajian12', group: 'condition1', isCondition: true },
+            // { from: 'tioajian12', to: 'test3', group: 'condition1', isCondition: true },
+            //{ from: 'test3', to: 'test4', group: 'condition1', isCondition: true },
+
+            { from: 'condition21', to: 'condition22', group: 'condition2', isCondition: true }
         ]
     };
 

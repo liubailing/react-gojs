@@ -44,27 +44,22 @@ export const colors = {
     font: '#fff',
     border: '#6383BC',
     backgroud: '#6383BC',
+    highlight: '#5685d6',
 
     group_font: '#555',
     group_border: '#EBEEF5',
     group_bg: '#EBEEF5',
     group_panel_bg: '#fff',
+    group_highlight: '#5685d6',
+    group_highlight_font: '#fff',
 
     icon_bg: '#6383BC',
     icon: '#fff',
 
     link: '#9EA3AF',
-
-    hover_bg: '#ddd',
-    drag_bg: '#ddd',
-    hover_font: '#ddd',
-    groupHeader_bg: '#2b71ed',
-    groupPanel_hover_bg: '#ddd',
-    group_backgroud: '#ddd',
-    link_hover_bg: '#fff',
-    link_drag_bg: '#ddd',
-    linkPlus_hover_bg: 'ddd',
-    linkPlus_drag_bg: '#ddd',
+    link_icon: '#fff',
+    link_icon_bg: '#BFC5D3',
+    link_highlight: '#5685d6',
 
     tip: '#ddd',
     transparent: 'transparent'
@@ -76,7 +71,9 @@ export const DiagramSetting = {
     tipFont: 'bold 14px Sans-Serif',
     groupTip: '将要执行的流程拖放在此处',
     moveNode: false,
-    moveGroup: false,
+    moveLoop: false,
+    moveCond: false,
+    moveCondBranch: false,
     padding: 2,
     layerSpacing: 30,
     startWidth: 20,
@@ -85,11 +82,15 @@ export const DiagramSetting = {
     endInWidth: 10,
     iconWidth: 14,
     iconInWidth: 7,
+    linkIconWidth: 16,
+    linkIconInWidth: 8,
     nodeWith: 120,
     nodeHeight: 25,
     groupWith: 160,
     ConditionWidth: 140,
-    linkOpacity: 0
+    linkOpacity: 0,
+    spotOpacity: 0,
+    test: true
 };
 
 const isGroupArr: WFNodeType[] = [WFNodeType.Condition, WFNodeType.Loop];
@@ -104,8 +105,9 @@ export interface DiagramState {
     model: DiagramModel<WFNodeModel, WFLinkModel>;
     selectedNodeKeys: string[];
     currKey: string;
-    hightNode: NodeEvent | null;
-    isHight: boolean;
+    // hightNode: NodeEvent | null;
+    // isHight: boolean;
+    // height: number;
 }
 
 /**
@@ -146,7 +148,6 @@ export interface WFNodeModel extends BaseNodeModel {
 
     //以下属性不用管
     category?: string; // 图形分类      对应 DiagramCategory     WFNode | LoopGroup | ConditionGroup | Condition | Start | End
-    color?: string; //
     opacity?: number; //
 }
 
@@ -162,7 +163,8 @@ export interface WFLinkModel extends LinkModel {
 
     //以下属性不用管
     category?: string; // 图形分类      对应 DiagramCategory 里面的    WFLink | ConditionLink
-    color?: string;
+    fromSpot?: string;
+    toSpot?: string;
 }
 
 const getOneNode = (
@@ -170,7 +172,6 @@ const getOneNode = (
     payload: string,
     group: string = '',
     isGroup: boolean = false,
-    color: string = '',
     isCond: boolean = false
 ): WFNodeModel => {
     var cate = DiagramCategory.WFNode;
@@ -213,7 +214,6 @@ const getOneNode = (
         group: group,
         isGroup: isGroup,
         hasChild: false,
-        color: color,
         opacity: 0,
         category: cate
     };
@@ -246,7 +246,7 @@ const updateNodeColorHandler = (state: DiagramState, ev: NodeEvent): DiagramStat
     const updatedNodes = state.model.nodeDataArray.map(node => {
         return {
             ...node,
-            color: ev.eType === NodeEventType.LinkHightLight ? colors.group_backgroud : colors.hover_bg
+            color: ev.eType === NodeEventType.LinkHightLight ? colors.highlight : colors.backgroud
         };
     });
 
@@ -322,67 +322,78 @@ const addNodeBySelfHandler = (state: DiagramState, ev: NodeEvent): DiagramState 
         return state;
     }
 
-    let ind = -1;
-    let oldline: WFLinkModel;
-    let link_Add: WFLinkModel[] = [];
-    let node = getOneNode(WFNodeType.ConditionSwitch, ev.toNode.label, ev.toNode.group, true, '', true);
-    if (ev.eType === NodeEventType.AddPrvNode) {
-        ind = state.model.linkDataArray.findIndex(x => x.to === ev.toNode!.key);
-        if (ind < 0) {
-            link_Add.push(getLink(node.key, ev.toNode!.key, ev.toNode!.group, true));
+    if (DiagramSetting.test) {
+        let ind = -1;
+        let oldline: WFLinkModel;
+        let link_Add: WFLinkModel[] = [];
+
+        let node = getOneNode(WFNodeType.ConditionSwitch, ev.toNode.label, ev.toNode.group, true);
+        if (ev.eType === NodeEventType.AddPrvNode) {
+            ind = state.model.linkDataArray.findIndex(x => x.to === ev.toNode!.key);
+            if (ind < 0) {
+                link_Add.push(getLink(node.key, ev.toNode!.key, ev.toNode!.group, true));
+            } else {
+                // oldline = state.model.linkDataArray[ind];
+                // link_Add = [getLink(oldline.from,node.key,ev.toNode!.group),getLink(node.key,oldline.to,ev.toNode!.group)]
+            }
         } else {
-            // oldline = state.model.linkDataArray[ind];
-            // link_Add = [getLink(oldline.from,node.key,ev.toNode!.group),getLink(node.key,oldline.to,ev.toNode!.group)]
+            ind = state.model.linkDataArray.findIndex(x => x.from === ev.toNode!.key);
+            if (ind < 0) {
+                link_Add.push(getLink(ev.toNode!.key, node.key, ev.toNode!.group, true));
+            } else {
+            }
         }
+
+        if (ind > -1) {
+            oldline = state.model.linkDataArray[ind];
+            link_Add = [
+                getLink(oldline.from, node.key, ev.toNode!.group, true),
+                getLink(node.key, oldline.to, ev.toNode!.group, true)
+            ];
+        }
+
+        link_Add.map(x => {
+            x.category = DiagramCategory.ConditionLink;
+        });
+
+        return {
+            ...state,
+            model: {
+                nodeDataArray: [...state.model.nodeDataArray, node],
+                linkDataArray:
+                    ind > -1
+                        ? [
+                              ...state.model.linkDataArray.slice(0, ind),
+                              ...state.model.linkDataArray.slice(ind + 1),
+                              ...link_Add
+                          ]
+                        : [...state.model.linkDataArray, ...link_Add]
+            }
+        };
     } else {
-        ind = state.model.linkDataArray.findIndex(x => x.from === ev.toNode!.key);
+        const ind = state.model.nodeDataArray.findIndex(x => x.key === ev.toNode!.key);
         if (ind < 0) {
-            link_Add.push(getLink(ev.toNode!.key, node.key, ev.toNode!.group, true));
-        } else {
+            return state;
         }
-    }
 
-    if (ind > -1) {
-        oldline = state.model.linkDataArray[ind];
-        link_Add = [
-            getLink(oldline.from, node.key, ev.toNode!.group, true),
-            getLink(node.key, oldline.to, ev.toNode!.group, true)
-        ];
-    }
+        var node = getOneNode(WFNodeType.ConditionSwitch, `${ev.toNode.label}`, ev.toNode.group, true);
 
-    // const ind = state.model.nodeDataArray.findIndex(x => x.key === ev.toNode!.key);
-    // if (ind < 0) {
-    //     return state;
-    // }
-
-    //var node = getOneNode(`${ev.toNode.label}-${++count}`, ev.toNode.group, false, '', true)
-
-    // if (ev.eType === NodeEventType.AddPrvNode && ind > 0) {
-    //     state.model.nodeDataArray.splice(ind, 0, node)
-    // }
-
-    // if (ev.eType === NodeEventType.AddNextNode) {
-    //     state.model.nodeDataArray.splice(ind + 1, 0, node)
-    // }
-
-    link_Add.map(x => {
-        x.category = DiagramCategory.ConditionLink;
-    });
-
-    return {
-        ...state,
-        model: {
-            nodeDataArray: [...state.model.nodeDataArray, node],
-            linkDataArray:
-                ind > -1
-                    ? [
-                          ...state.model.linkDataArray.slice(0, ind),
-                          ...state.model.linkDataArray.slice(ind + 1),
-                          ...link_Add
-                      ]
-                    : [...state.model.linkDataArray, ...link_Add]
+        if (ev.eType === NodeEventType.AddPrvNode && ind > 0) {
+            state.model.nodeDataArray.splice(ind, 0, node);
         }
-    };
+
+        if (ev.eType === NodeEventType.AddNextNode) {
+            state.model.nodeDataArray.splice(ind + 1, 0, node);
+        }
+
+        return {
+            ...state,
+            model: {
+                ...state.model,
+                nodeDataArray: [...state.model.nodeDataArray]
+            }
+        };
+    }
 };
 
 /**
@@ -393,6 +404,18 @@ const addNodeBySelfHandler = (state: DiagramState, ev: NodeEvent): DiagramState 
 const addNodeAfterDropNodeHandler = (state: DiagramState, ev: NodeEvent): DiagramState => {
     if (!ev.toNode || !ev.toNode.key) {
         return state;
+    }
+
+    if (ev.toNode.category === DiagramCategory.ConditionGroup) {
+        console.log('条件组不支持拖放流程');
+        return state;
+    }
+
+    if (ev.toNode.category === DiagramCategory.ConditionSwitch || ev.toNode.category === DiagramCategory.LoopGroup) {
+        if (state.model.nodeDataArray.findIndex(x => x.group === ev.toNode!.key) > -1) {
+            console.log('条件分支,循环 只能支持一个流程');
+            return state;
+        }
     }
 
     let node: WFNodeModel;
@@ -517,7 +540,6 @@ const addNodeAfterDropLinkHandler = (state: DiagramState, ev: NodeEvent): Diagra
             node = getOneNode(state.drager.type, state.drager.name, ev.toLink.group);
             if (isGroupArr.includes(state.drager.type)) {
                 node.isGroup = true;
-                node.color = colors.group_backgroud;
                 if (state.drager.type === WFNodeType.Condition) {
                     node.hasChild = true;
 
@@ -717,50 +739,48 @@ const setNodeHighlightHandler = (state: DiagramState, ev: NodeEvent): DiagramSta
 
     // }
 
-    let nodeToRemoveIndex = -1;
+    // let nodeToRemoveIndex = -1;
 
-    if (ev.eType === NodeEventType.HightLightNode && ev.toNode!.key) {
-        state.model.nodeDataArray.map(x => {
-            x.color = x.key === ev.toNode!.key ? colors.drag_bg : colors.backgroud;
-            return x;
-        });
+    // if (ev.eType === NodeEventType.HightLightNode && ev.toNode!.key) {
+    //     state.model.nodeDataArray.map(x => {
+    //         x.color = x.key === ev.toNode!.key ? colors.highlight : colors.backgroud;
+    //         return x;
+    //     });
 
-        state.model.linkDataArray.map(x => {
-            x.color = colors.link_hover_bg;
-            return x;
-        });
+    //     state.model.linkDataArray.map(x => {
+    //         x.color = colors.link;
+    //         return x;
+    //     });
 
-        //state.model
-        nodeToRemoveIndex = state.model.nodeDataArray.findIndex(node => node.key === ev.toNode!.key);
-        if (nodeToRemoveIndex === -1) {
-            return state;
-        }
-        return {
-            ...state,
-            model: {
-                ...state.model
-            }
-        };
-    }
+    //     //state.model
+    //     nodeToRemoveIndex = state.model.nodeDataArray.findIndex(node => node.key === ev.toNode!.key);
+    //     if (nodeToRemoveIndex === -1) {
+    //         return state;
+    //     }
+    //     return {
+    //         ...state,
+    //         model: {
+    //             ...state.model
+    //         }
+    //     };
+    // }
 
-    if (ev.eType === NodeEventType.HightLightCondition && ev.toNode!.key) {
-        state.model.nodeDataArray.map(x => {
-            if (x.key === ev.toNode!.key && x.category === DiagramCategory.ConditionSwitch) x.opacity = 1;
-            return x;
-        });
+    // if (ev.eType === NodeEventType.HightLightCondition && ev.toNode!.key) {
+    //     state.model.nodeDataArray.map(x => {
+    //         if (x.key === ev.toNode!.key && x.category === DiagramCategory.ConditionSwitch) x.opacity = 1;
+    //         return x;
+    //     });
 
-        return {
-            ...state,
-            model: {
-                ...state.model
-            }
-        };
-    }
+    //     return {
+    //         ...state,
+    //         model: {
+    //             ...state.model
+    //         }
+    //     };
+    // }
 
     return {
-        ...state,
-        isHight: true,
-        hightNode: ev
+        ...state
     };
 };
 
@@ -778,18 +798,13 @@ const clearNodeHighlightHandler = (state: DiagramState): DiagramState => {
     // state.diagram.commitTransaction('highlight');
     // state.diagram.skipsUndoManager = oldskips;
 
-    state.model.nodeDataArray.map(x => {
-        x.color = '';
-        if (x.category === DiagramCategory.ConditionSwitch) x.opacity = 0;
-        return x;
-    });
+    // state.model.nodeDataArray.map(x => {
+    //     x.color = '';
+    //     if (x.category === DiagramCategory.ConditionSwitch) x.opacity = 0;
+    //     return x;
+    // });
     return {
-        ...state,
-        model: {
-            ...state.model
-        },
-        hightNode: null,
-        isHight: false
+        ...state
     };
 };
 
@@ -808,9 +823,7 @@ export const diagramReducer: Reducer<DiagramState> = reducerWithInitialState<Dia
     currKey: '',
     diagram: new go.Diagram(),
     model: getModel(),
-    selectedNodeKeys: [],
-    hightNode: null,
-    isHight: false
+    selectedNodeKeys: []
 })
     .case(init, initHandler)
     .case(updateNodeColor, updateNodeColorHandler)
